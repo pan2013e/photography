@@ -324,6 +324,9 @@
                     else if (current_data['icon'] === 'ExposureTime') {
                         template += exif_data + ' s';
                     }
+                    else if (current_data['icon'] === 'ISOSpeedRatings') {
+                        template += 'ISO ' + exif_data;
+                    }
                     else {
                         template += '<i class="fa fa-' + current_data['icon'] + '" aria-hidden="true"></i> ' + exif_data;
                     }
