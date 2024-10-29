@@ -315,16 +315,16 @@
                 var current_data = exif[current];
                 var exif_data = EXIF.getTag(img, current_data['tag']);
                 if (typeof exif_data !== "undefined") {
-                    if (current_data['icon'] === 'FocalLengthIn35mmFilm') {
+                    if (current_data['tag'] === 'FocalLengthIn35mmFilm') {
                         template += exif_data + ' mm';
                     }
-                    else if (current_data['icon'] === 'FNumber') {
+                    else if (current_data['tag'] === 'FNumber') {
                         template += 'f/' + exif_data;
                     }
-                    else if (current_data['icon'] === 'ExposureTime') {
+                    else if (current_data['tag'] === 'ExposureTime') {
                         template += exif_data + ' s';
                     }
-                    else if (current_data['icon'] === 'ISOSpeedRatings') {
+                    else if (current_data['tag'] === 'ISOSpeedRatings') {
                         template += 'ISO ' + exif_data;
                     }
                     else {
