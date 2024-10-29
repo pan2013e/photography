@@ -322,6 +322,9 @@
                         template += 'f/' + exif_data;
                     }
                     else if (current_data['tag'] === 'ExposureTime') {
+                        if (exif_data.endsWith('/1')) {
+                            exif_data = exif_data.substring(0, exif_data.length - 2);
+                        }
                         template += exif_data + ' s';
                     }
                     else if (current_data['tag'] === 'ISOSpeedRatings') {
