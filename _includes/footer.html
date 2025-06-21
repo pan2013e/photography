@@ -1,11 +1,11 @@
-<script src="/assets/js/jquery.min.js"></script>
-<script src="/assets/js/jquery.poptrox.js"></script>
-<script src="/assets/js/skel.min.js"></script>
-<script src="/assets/js/util.js"></script>
-<script src="/assets/js/exif.js"></script>
-<script src="/assets/js/main.min.js"></script>
-<script src="/assets/js/leaflet.js"></script>
-<script src="/assets/js/axios.min.js"></script>
+<script src="assets/js/jquery.min.js"></script>
+<script src="assets/js/jquery.poptrox.js"></script>
+<script src="assets/js/skel.min.js"></script>
+<script src="assets/js/util.js"></script>
+<script src="assets/js/exif.js"></script>
+<script src="assets/js/main.min.js"></script>
+<script src="assets/js/leaflet.js"></script>
+<script src="assets/js/axios.min.js"></script>
 <script>
   const gallery = document.getElementById('main');
   const items = Array.from(gallery.children);
@@ -150,7 +150,7 @@ fetch('https://raw.githubusercontent.com/pan2013e/photography/refs/heads/main/as
       list.appendChild(li);
 
       li.addEventListener('click', () => {
-        window.location.href = `/pages/${country.code.toLowerCase()}/`;
+        window.location.href = `/${country.code.toLowerCase()}`;
       });
 
       li.addEventListener('mouseenter', () => {
@@ -207,7 +207,7 @@ fetch('https://raw.githubusercontent.com/pan2013e/photography/refs/heads/main/as
                 }
                 const countryObj = countries.find(c => c.name === country);
                 if (countryObj) {
-                  window.location.href = `/pages/${countryObj.code.toLowerCase()}/`;
+                  window.location.href = `/${countryObj.code.toLowerCase()}`;
                 }
               }
             });
@@ -285,7 +285,7 @@ fetch('https://raw.githubusercontent.com/pan2013e/photography/refs/heads/main/as
       list.appendChild(li);
 
       li.addEventListener('click', () => {
-        window.location.href = `/pages/${airport.iata.toLowerCase()}/`;
+        window.location.href = `/${airport.iata.toLowerCase()}`;
       });
     });
   })
