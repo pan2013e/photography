@@ -1,0 +1,236 @@
+<script src="assets/js/jquery.min.js"></script>
+<script src="assets/js/jquery.poptrox.js"></script>
+<script src="assets/js/skel.min.js"></script>
+<script src="assets/js/util.js"></script>
+<script src="assets/js/exif.js"></script>
+<script src="assets/js/main.min.js"></script>
+<script src="assets/js/leaflet.js"></script>
+<script src="assets/js/axios.min.js"></script>
+<script>
+  const gallery = document.getElementById('main');
+  const items = Array.from(gallery.children);
+  items.sort(() => Math.random() - 0.5);
+  items.forEach(item => gallery.appendChild(item));
+</script>
+<script>
+    document.documentElement.style.scrollBehavior = 'smooth';
+
+    let selectedLayer = null;
+    const map = L.map('map').setView([25, 25], 2);
+    let geojsonLayer;
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors &amp; Alibaba Cloud DataV.GeoAtlas',
+    }).addTo(map);
+    axios.get('assets/countries.geo.json')
+      .then(res => {
+        geojsonLayer = L.geoJSON(res.data, {
+          style: {
+            color: "#333",
+            weight: 1,
+            fillOpacity: 0.2
+          },
+          onEachFeature: function (feature, layer) {
+            // This will be updated after available_countries.json is loaded
+          }
+        }).addTo(map);
+        window.geojsonLayer = geojsonLayer;
+    });
+</script>
+<script>
+// Example JSON format expected: [{ "name": "China", "code": "cn" }, { "name": "Japan", "code": "jp" }]
+fetch('/assets/available_countries.json')
+  .then(res => res.json())
+  .then(countries => {
+    const list = document.getElementById('country-list');
+
+    const container = list.parentNode;
+    const searchBox = document.createElement('input');
+    searchBox.type = 'text';
+    searchBox.placeholder = 'Search...';
+    searchBox.style.marginBottom = '10px';
+    searchBox.style.padding = '4px';
+    searchBox.style.width = '100%';
+
+    // Add A-Z quick nav
+    const azNav = document.createElement('div');
+    azNav.style.display = 'flex';
+    azNav.style.flexWrap = 'wrap';
+    azNav.style.gap = '4px';
+    azNav.style.fontSize = '11px';
+    azNav.style.marginBottom = '8px';
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(letter => {
+      const link = document.createElement('a');
+      link.textContent = letter;
+      link.href = 'javascript:void(0)';
+      link.style.color = 'white';
+      link.style.marginRight = '4px';
+      link.addEventListener('click', () => {
+        const target = document.getElementById(`letter-${letter}`);
+        if (target) {
+          const listTop = list.getBoundingClientRect().top;
+          const targetTop = target.getBoundingClientRect().top;
+          const offset = targetTop - listTop + list.scrollTop;
+          list.scrollTo({ top: offset, behavior: 'smooth' });
+        }
+      });
+      azNav.appendChild(link);
+    });
+
+    container.insertBefore(azNav, list);
+    container.insertBefore(searchBox, list);
+
+    searchBox.addEventListener('input', () => {
+      const q = searchBox.value.toLowerCase();
+      const headings = new Set();
+
+      Array.from(list.children).forEach(li => {
+        if (li.id && li.id.startsWith('letter-')) {
+          // Hide all headings initially
+          li.style.display = 'none';
+        } else {
+          const text = li.textContent.toLowerCase();
+          const match = text.includes(q);
+          li.style.display = match ? 'flex' : 'none';
+          if (match) {
+            // Record matching heading letter
+            let prev = li.previousSibling;
+            while (prev && !(prev.id && prev.id.startsWith('letter-'))) {
+              prev = prev.previousSibling;
+            }
+            if (prev) headings.add(prev.id);
+          }
+        }
+      });
+
+      headings.forEach(id => {
+        const headingEl = document.getElementById(id);
+        if (headingEl) headingEl.style.display = '';
+      });
+    });
+
+    countries.sort((a, b) => a.name.localeCompare(b.name));
+    const availableSet = new Set(countries.map(c => c.name));
+
+    let currentLetter = '';
+    countries.forEach(country => {
+      const firstLetter = country.name[0].toUpperCase();
+      if (firstLetter !== currentLetter) {
+        currentLetter = firstLetter;
+        const heading = document.createElement('li');
+        heading.id = `letter-${currentLetter}`;
+        heading.textContent = currentLetter;
+        heading.style.fontWeight = 'bold';
+        heading.style.marginTop = '1em';
+        heading.style.backgroundColor = 'transparent';
+        heading.style.zIndex = '1';
+        heading.style.padding = '4px 0';
+        list.appendChild(heading);
+      }
+
+      const li = document.createElement('li');
+      li.style.display = 'flex';
+      li.style.alignItems = 'center';
+      li.style.marginBottom = '8px';
+
+      const img = document.createElement('img');
+      img.src = `https://flagcdn.com/w40/${country.code.toLowerCase()}.png`;
+      img.alt = country.name;
+      img.style.marginRight = '10px';
+      img.width = 24;
+
+      const span = document.createElement('a');
+      span.textContent = country.name;
+      span.href = "#";
+      span.style.textDecoration = 'none';
+      span.style.color = 'white';
+      span.style.flexGrow = '1';
+
+      li.appendChild(img);
+      li.appendChild(span);
+      list.appendChild(li);
+
+      li.addEventListener('click', () => {
+        window.location.href = `${country.code.toLowerCase()}.html`;
+      });
+
+      li.addEventListener('mouseenter', () => {
+        if (!window.geojsonLayer) return;
+        window.geojsonLayer.eachLayer(layer => {
+          if (layer.feature && layer.feature.properties.name === country.name) {
+            layer.setStyle({ fillOpacity: 0.5 });
+          }
+        });
+      });
+      li.addEventListener('mouseleave', () => {
+        if (!window.geojsonLayer) return;
+        window.geojsonLayer.eachLayer(layer => {
+          if (layer.feature && layer.feature.properties.name === country.name && layer !== selectedLayer) {
+            geojsonLayer.resetStyle(layer);
+          }
+        });
+      });
+    });
+
+    // Update geojsonLayer's onEachFeature to only make available countries interactive
+    function updateGeojsonLayerInteractions() {
+      const listItems = document.querySelectorAll('#country-list li');
+      if (window.geojsonLayer) {
+        window.geojsonLayer.eachLayer(layer => {
+          const feature = layer.feature;
+          if (!feature) return;
+          if (availableSet.has(feature.properties.name)) {
+            layer.on({
+              mouseover: (e) => {
+                let country = feature.properties.name;
+                if (["Hong Kong", "Macao", "Taiwan"].includes(country)) {
+                  country = "China";
+                }
+                e.target.setStyle({ fillOpacity: 0.5 });
+                listItems.forEach(li => {
+                  if (li.textContent.trim() === country) {
+                    li.style.backgroundColor = '#222';
+                  }
+                });
+              },
+              mouseout: (e) => {
+                let country = feature.properties.name;
+                if (["Hong Kong", "Macao", "Taiwan"].includes(country)) {
+                  country = "China";
+                }
+                if (selectedLayer !== e.target) geojsonLayer.resetStyle(e.target);
+                listItems.forEach(li => li.style.backgroundColor = '');
+              },
+              click: () => {
+                let country = feature.properties.name;
+                if (["Hong Kong", "Macao", "Taiwan"].includes(country)) {
+                  country = "China";
+                }
+                const countryObj = countries.find(c => c.name === country);
+                if (countryObj) {
+                  window.location.href = `${countryObj.code.toLowerCase()}.html`;
+                }
+              }
+            });
+            layer.setStyle({ fillOpacity: 0.2, color: "#333" });
+          } else {
+            layer.setStyle({ fillOpacity: 0.05, color: '#999' });
+            layer.off();
+          }
+        });
+      }
+    }
+
+    if (window.geojsonLayer) {
+      updateGeojsonLayerInteractions();
+    } else {
+      // If geojsonLayer not yet loaded, wait for it
+      const interval = setInterval(() => {
+        if (window.geojsonLayer) {
+          clearInterval(interval);
+          updateGeojsonLayerInteractions();
+        }
+      }, 100);
+    }
+  })
+  .catch(err => console.error("Failed to load countries:", err));
+</script>

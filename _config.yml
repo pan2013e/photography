@@ -1,0 +1,24 @@
+# baseurl: "https://pan2013e.github.io/photography"  # Comment it for local testing
+top_url: "https://pan2013e.github.io"
+image_fulls_loc: "/images/fulls"
+image_thumbs_loc: "/images/thumbs"
+category:
+  - title: '<i class="fa fa-globe fa-lg" aria-hidden="true"></i>'
+    page: "#world-map"
+  - title: '<i class="fa fa-plane fa-lg" aria-hidden="true"></i>'
+    page: "aviation.html"
+  - title: '<i class="fa fa-paw" aria-hidden="true"></i>'
+    page: "wildlife.html"
+
+title: "Photography by Zhiyuan Pan"
+subtitle: "See the world through my eyes!"
+author: "Zhiyuan Pan"
+header:
+  title: "Photography"
+  subtitle: "by Zhiyuan Pan"
+footer:
+  name: "Hey there, my name is Zhiyuan Pan"
+  bio: "I am a student at Zhejiang University. Love photography. :)"
+exif: '[{"tag": "Model", "icon": "camera-retro"}, {"tag": "FocalLengthIn35mmFilm", "icon": "telescope"}, {"tag": "FNumber", "icon": "dot-circle-o"}, {"tag": "ExposureTime", "icon": "clock-o"}, {"tag": "ISOSpeedRatings", "icon": "info-circle"}]'
+social_urls:
+  github: "https://www.github.com/pan2013e"
