@@ -21,7 +21,7 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors &amp; Alibaba Cloud DataV.GeoAtlas',
     }).addTo(map);
-    axios.get('assets/countries.geo.json')
+    axios.get('https://raw.githubusercontent.com/pan2013e/photography/refs/heads/main/assets/countries.geo.json')
       .then(res => {
         geojsonLayer = L.geoJSON(res.data, {
           style: {
@@ -38,7 +38,7 @@
 </script>
 <script>
 // Example JSON format expected: [{ "name": "China", "code": "cn" }, { "name": "Japan", "code": "jp" }]
-fetch('/assets/available_countries.json')
+fetch('https://raw.githubusercontent.com/pan2013e/photography/refs/heads/main/assets/available_countries.json')
   .then(res => res.json())
   .then(countries => {
     const list = document.getElementById('country-list');
