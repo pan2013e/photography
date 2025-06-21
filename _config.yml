@@ -8,7 +8,7 @@ category:
   - title: '<i class="fa fa-plane fa-lg" aria-hidden="true"></i>'
     page: "#airport-selector"
   - title: '<i class="fa fa-paw" aria-hidden="true"></i>'
-    page: "/pages/wildlife.html"
+    page: "/photography/wildlife"
 
 title: "Photography by Zhiyuan Pan"
 subtitle: "See the world through my eyes!"

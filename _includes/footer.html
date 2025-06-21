@@ -150,7 +150,7 @@ fetch('https://raw.githubusercontent.com/pan2013e/photography/refs/heads/main/as
       list.appendChild(li);
 
       li.addEventListener('click', () => {
-        window.location.href = `/${country.code.toLowerCase()}`;
+        window.location.href = `/photography/${country.code.toLowerCase()}`;
       });
 
       li.addEventListener('mouseenter', () => {
@@ -207,7 +207,7 @@ fetch('https://raw.githubusercontent.com/pan2013e/photography/refs/heads/main/as
                 }
                 const countryObj = countries.find(c => c.name === country);
                 if (countryObj) {
-                  window.location.href = `/${countryObj.code.toLowerCase()}`;
+                  window.location.href = `/photography/${countryObj.code.toLowerCase()}`;
                 }
               }
             });
@@ -285,7 +285,7 @@ fetch('https://raw.githubusercontent.com/pan2013e/photography/refs/heads/main/as
       list.appendChild(li);
 
       li.addEventListener('click', () => {
-        window.location.href = `/${airport.iata.toLowerCase()}`;
+        window.location.href = `/photography/${airport.iata.toLowerCase()}`;
       });
     });
   })
