@@ -6,9 +6,9 @@ category:
   - title: '<i class="fa fa-globe fa-lg" aria-hidden="true"></i>'
     page: "#world-map"
   - title: '<i class="fa fa-plane fa-lg" aria-hidden="true"></i>'
-    page: "aviation.html"
+    page: "#airport-selector"
   - title: '<i class="fa fa-paw" aria-hidden="true"></i>'
-    page: "wildlife.html"
+    page: "/pages/wildlife.html"
 
 title: "Photography by Zhiyuan Pan"
 subtitle: "See the world through my eyes!"

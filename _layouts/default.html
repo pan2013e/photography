@@ -6,14 +6,14 @@
 <body>
     <div id="wrapper">
         <header id="header">
-            <h1><a href="index.html"><strong>{{ site.header.title }}</strong> {{ site.header.subtitle }}</a></h1>
+            <h1><a href="/"><strong>{{ site.header.title }}</strong> {{ site.header.subtitle }}</a></h1>
             <nav>
                 <ul>
                     <li>
                         <a href="{{ site.top_url }}"><i class="fa fa-arrow-left fa-lg" aria-hidden="true"></i></a>
                     </li>
                     <li>
-                        <a href="index.html"><i class="fa fa-home fa-lg" aria-hidden="true"></i></a>
+                        <a href="/"><i class="fa fa-home fa-lg" aria-hidden="true"></i></a>
                     </li>
                     {% for cat in site.category %}
                     <li><a href="{{ cat.page }}">{{ cat.title }}</a></li>
@@ -35,6 +35,14 @@
                 <div style="flex: 1; overflow: hidden;">
                     <h2>Find by Name</h2>
                     <ul id="country-list" style="list-style: none; padding: 0; overflow-y: auto; max-height: 70%;"></ul>
+                </div>
+            </div>
+        </footer>
+        <footer id="airport-selector" class="panel" style="height: 100vh;">
+            <div class="inner" style="width: 100%; height: 100%; display: flex; ">
+                <div style="flex: 1; overflow: hidden;">
+                    <h2>Find by Name or Code</h2>
+                    <ul id="airport-list" style="list-style: none; padding: 0; overflow-y: auto; max-height: 70%;"></ul>
                 </div>
             </div>
         </footer>

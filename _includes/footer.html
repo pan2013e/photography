@@ -1,11 +1,11 @@
-<script src="assets/js/jquery.min.js"></script>
-<script src="assets/js/jquery.poptrox.js"></script>
-<script src="assets/js/skel.min.js"></script>
-<script src="assets/js/util.js"></script>
-<script src="assets/js/exif.js"></script>
-<script src="assets/js/main.min.js"></script>
-<script src="assets/js/leaflet.js"></script>
-<script src="assets/js/axios.min.js"></script>
+<script src="/assets/js/jquery.min.js"></script>
+<script src="/assets/js/jquery.poptrox.js"></script>
+<script src="/assets/js/skel.min.js"></script>
+<script src="/assets/js/util.js"></script>
+<script src="/assets/js/exif.js"></script>
+<script src="/assets/js/main.min.js"></script>
+<script src="/assets/js/leaflet.js"></script>
+<script src="/assets/js/axios.min.js"></script>
 <script>
   const gallery = document.getElementById('main');
   const items = Array.from(gallery.children);
@@ -150,7 +150,7 @@ fetch('https://raw.githubusercontent.com/pan2013e/photography/refs/heads/main/as
       list.appendChild(li);
 
       li.addEventListener('click', () => {
-        window.location.href = `${country.code.toLowerCase()}.html`;
+        window.location.href = `/pages/${country.code.toLowerCase()}/`;
       });
 
       li.addEventListener('mouseenter', () => {
@@ -207,7 +207,7 @@ fetch('https://raw.githubusercontent.com/pan2013e/photography/refs/heads/main/as
                 }
                 const countryObj = countries.find(c => c.name === country);
                 if (countryObj) {
-                  window.location.href = `${countryObj.code.toLowerCase()}.html`;
+                  window.location.href = `/pages/${countryObj.code.toLowerCase()}/`;
                 }
               }
             });
@@ -233,4 +233,61 @@ fetch('https://raw.githubusercontent.com/pan2013e/photography/refs/heads/main/as
     }
   })
   .catch(err => console.error("Failed to load countries:", err));
+</script>
+<script>
+// Expected JSON format: [{ "iata": "PEK", "icao": "ZBAA", "name": "Beijing Capital International Airport", "country": "cn" }]
+fetch('https://raw.githubusercontent.com/pan2013e/photography/refs/heads/main/assets/available_airports.json')
+  .then(res => res.json())
+  .then(airports => {
+    const list = document.getElementById('airport-list');
+
+    const container = list.parentNode;
+    const searchBox = document.createElement('input');
+    searchBox.type = 'text';
+    searchBox.placeholder = 'Search...';
+    searchBox.style.marginBottom = '10px';
+    searchBox.style.padding = '4px';
+    searchBox.style.width = '100%';
+
+    container.insertBefore(searchBox, list);
+
+    searchBox.addEventListener('input', () => {
+      const q = searchBox.value.toLowerCase();
+      Array.from(list.children).forEach(li => {
+        const text = li.textContent.toLowerCase();
+        li.style.display = text.includes(q) ? 'flex' : 'none';
+      });
+    });
+
+    airports.sort((a, b) => a.name.localeCompare(b.name));
+    
+    airports.forEach(airport => {
+      const li = document.createElement('li');
+      li.style.display = 'flex';
+      li.style.alignItems = 'center';
+      li.style.marginBottom = '8px';
+
+      const img = document.createElement('img');
+      img.src = `https://flagcdn.com/w40/${airport.country.toLowerCase()}.png`;
+      img.alt = airport.country;
+      img.style.marginRight = '10px';
+      img.width = 24;
+
+      const span = document.createElement('a');
+      span.textContent = `${airport.name} - ${airport.iata} - ${airport.icao}`;
+      span.href = "#";
+      span.style.textDecoration = 'none';
+      span.style.color = 'white';
+      span.style.flexGrow = '1';
+
+      li.appendChild(img);
+      li.appendChild(span);
+      list.appendChild(li);
+
+      li.addEventListener('click', () => {
+        window.location.href = `/pages/${airport.iata.toLowerCase()}/`;
+      });
+    });
+  })
+  .catch(err => console.error("Failed to load airports:", err));
 </script>
