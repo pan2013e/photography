@@ -983,7 +983,10 @@
 		-ms-transition: -ms-transform 0.5s ease;
 		transition: transform 0.5s ease;
 		-webkit-overflow-scrolling: touch;
-		background: rgba(36, 38, 41, 0.975);
+		background: rgba(36, 38, 41, 0.6);
+		backdrop-filter: blur(8px);
+  		-webkit-backdrop-filter: blur(8px);
+		text-shadow: 0 2px 2px rgba(0, 0, 0, 0.6);
 		bottom: 4em;
 		left: 0;
 		max-height: calc(80vh - 4em);
@@ -1396,7 +1399,10 @@
 		-moz-user-select: none;
 		-ms-user-select: none;
 		-webkit-user-select: none;
-		background: #1f2224;
+		background: rgba(36, 38, 41, 0.6);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+		text-shadow: 0 2px 2px rgba(0, 0, 0, 0.6);
 		bottom: -1em;
 		height: 5em;
 		left: 0;

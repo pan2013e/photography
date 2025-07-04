@@ -6,7 +6,6 @@
 <body>
     <div id="wrapper">
         <header id="header">
-            <h1><a href="/photography"><strong>{{ site.header.title }}</strong> {{ site.header.subtitle }}</a></h1>
             <nav>
                 <ul>
                     <li>
@@ -49,21 +48,21 @@
         <footer id="footer" class="panel">
             <div class="inner split">
                 <div>
-                    <section>
+                    <section style="color: white;">
                         <h2>{{ site.footer.name }}</h2>
                         <p>{{ site.footer.bio }}</p>
                     </section>
-                    <section>
+                    <section style="color: white;">
                         <h2>Follow me on ...</h2>
                         <ul class="icons">
                             <li>
-                                <a href="{{ site.social_urls.github }}" class="icon fa-github">
+                                <a href="{{ site.social_urls.github }}" class="icon fa-github" style="color: white;">
                                     <span class="label">GitHub</span>
                                 </a>
                             </li>
                         </ul>
                     </section>
-                    <p class="copyright">
+                    <p class="copyright" style="color: white;">
                         &copy; {{ site.author }}.
                     </p>
                 </div>
