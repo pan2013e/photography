@@ -9,7 +9,7 @@ var del = require('del');
 var fs = require('fs');
 
 gulp.task('delete', function () {
-    return del(['images/*.*']);
+    return del(['images/*.*', 'images_tmp/*.*']);
 });
 
 gulp.task('rename-images', async function () {
