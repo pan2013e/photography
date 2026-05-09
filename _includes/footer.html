@@ -259,7 +259,7 @@ fetch('{{ site.baseurl }}/assets/available_airports.json')
       });
     });
 
-    airports.sort((a, b) => a.name.localeCompare(b.name));
+    airports.sort((a, b) => a.icao.localeCompare(b.icao));
     
     airports.forEach(airport => {
       const li = document.createElement('li');
