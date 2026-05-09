@@ -7,4 +7,14 @@
 body { margin: 0; }
 #map { height: 60vh; width: 60vw; }
 .country-hover { fill: orange !important; }
+.is-iframe .hide-in-iframe { display: none; }
 </style>
+<script>
+try {
+    if (window.self !== window.top) {
+        document.documentElement.className += ' is-iframe';
+    }
+} catch (e) {
+    document.documentElement.className += ' is-iframe';
+}
+</script>

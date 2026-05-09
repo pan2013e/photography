@@ -3,8 +3,8 @@ layout: default
 ---
 
 {% for image in site.static_files %}
-{%- assign type = image.name | split:'-' | first -%}
-{% if image.path contains 'fulls' and type == page.prefix %}
+{%- assign categories = image.name | split:'-' -%}
+{% if image.path contains 'fulls' and categories contains page.prefix %}
 <article class="thumb">
     <a href="{{ site.baseurl }}{{ site.image_fulls_loc }}/{{ image.name }}" class="image">
         <img data-src="{{ site.baseurl }}{{ site.image_thumbs_loc }}/{{ image.name }}" alt="" loading="lazy" decoding="async"
