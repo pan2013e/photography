@@ -5,7 +5,6 @@
 <script src="assets/js/exif.min.js"></script>
 <script src="assets/js/main.min.js"></script>
 <script src="assets/js/leaflet.min.js"></script>
-<script src="assets/js/axios.min.js"></script>
 <script>
   const gallery = document.getElementById('main');
   const items = Array.from(gallery.children);
@@ -21,9 +20,10 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors &amp; Alibaba Cloud DataV.GeoAtlas',
     }).addTo(map);
-    axios.get('https://raw.githubusercontent.com/pan2013e/photography/refs/heads/main/assets/countries.geo.json')
-      .then(res => {
-        geojsonLayer = L.geoJSON(res.data, {
+    fetch('{{ site.baseurl }}/assets/countries.geo.json')
+      .then(res => res.json())
+      .then(data => {
+        geojsonLayer = L.geoJSON(data, {
           style: {
             color: "#333",
             weight: 1,
@@ -38,7 +38,7 @@
 </script>
 <script>
 // Example JSON format expected: [{ "name": "China", "code": "cn" }, { "name": "Japan", "code": "jp" }]
-fetch('https://raw.githubusercontent.com/pan2013e/photography/refs/heads/main/assets/available_countries.json')
+fetch('{{ site.baseurl }}/assets/available_countries.json')
   .then(res => res.json())
   .then(countries => {
     const list = document.getElementById('country-list');
@@ -236,7 +236,7 @@ fetch('https://raw.githubusercontent.com/pan2013e/photography/refs/heads/main/as
 </script>
 <script>
 // Expected JSON format: [{ "iata": "PEK", "icao": "ZBAA", "name": "Beijing Capital International Airport", "country": "cn" }]
-fetch('https://raw.githubusercontent.com/pan2013e/photography/refs/heads/main/assets/available_airports.json')
+fetch('{{ site.baseurl }}/assets/available_airports.json')
   .then(res => res.json())
   .then(airports => {
     const list = document.getElementById('airport-list');

@@ -28,11 +28,15 @@ gulp.task('resize-images', function () {
     return gulp.src('images/*.*')
         .pipe(imageResize({
             width: 2048,
+            quality: 88,
+            interlace: true,
             imageMagick: true
         }))
         .pipe(gulp.dest('images/fulls', {overwrite: true}))
         .pipe(imageResize({
             width: 1024,
+            quality: 82,
+            interlace: true,
             imageMagick: true
         }))
         .pipe(gulp.dest('images/thumbs', { overwrite: true}));

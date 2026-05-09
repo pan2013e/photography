@@ -218,6 +218,33 @@
         var $main = $('#main'),
             exifDatas = {};
 
+        function loadThumb($image, $image_img) {
+            if ($image.data('loaded'))
+                return;
+
+            var img = $image_img[0],
+                src = $image_img.attr('src') || $image_img.data('src');
+
+            if (!src)
+                return;
+
+            $image.data('loaded', true);
+            $image.css('background-image', 'url(' + src + ')');
+
+            $image_img.one("load", function() {
+                EXIF.getData(img, function () {
+                    exifDatas[$image_img.data('name')] = getExifDataMarkup(this);
+                });
+            });
+
+            if (!$image_img.attr('src')) {
+                img.loading = 'eager';
+                $image_img.attr('src', src);
+            }
+        }
+
+        var lazyThumbs = [];
+
         // Thumbs.
         $main.children('.thumb').each(function () {
 
@@ -233,15 +260,18 @@
             // This sets the background of the "image" <span> to the image pointed to by its child
             // <img> (which is then hidden). Gives us way more flexibility.
 
-            // Set background.
-            $image.css('background-image', 'url(' + $image_img.attr('src') + ')');
-
             // Set background position.
             if (x = $image_img.data('position'))
                 $image.css('background-position', x);
 
             // Hide original img.
             $image_img.hide();
+
+            lazyThumbs.push({
+                image: $image,
+                img: $image_img,
+                element: $this[0]
+            });
 
             // Hack: IE<11 doesn't support pointer-events, which means clicks to our image never
             // land as they're blocked by the thumbnail's caption overlay gradient. This just forces
@@ -253,14 +283,31 @@
                         $image.trigger('click');
                     });
 
-            // EXIF data
-            $image_img[0].addEventListener("load", function() {
-                EXIF.getData($image_img[0], function () {
-                    exifDatas[$image_img.data('name')] = getExifDataMarkup(this);
-                });
-            });
-
         });
+
+        if ('IntersectionObserver' in window) {
+            var thumbObserver = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (!entry.isIntersecting)
+                        return;
+
+                    var $image = $(entry.target).find('.image'),
+                        $image_img = $image.children('img');
+
+                    loadThumb($image, $image_img);
+                    thumbObserver.unobserve(entry.target);
+                });
+            }, { rootMargin: '800px' });
+
+            lazyThumbs.forEach(function(thumb) {
+                thumbObserver.observe(thumb.element);
+            });
+        }
+        else {
+            lazyThumbs.forEach(function(thumb) {
+                loadThumb(thumb.image, thumb.img);
+            });
+        }
 
         // Poptrox.
         $main.poptrox({
