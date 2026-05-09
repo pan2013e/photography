@@ -218,6 +218,18 @@
         var $main = $('#main'),
             exifDatas = {};
 
+        function disableImageActions($elements) {
+            $elements
+                .attr('draggable', 'false')
+                .on('contextmenu dragstart', function(event) {
+                    event.preventDefault();
+                });
+        }
+
+        $main.on('contextmenu dragstart', '.thumb, .thumb .image, .thumb img', function(event) {
+            event.preventDefault();
+        });
+
         function loadThumb($image, $image_img) {
             if ($image.data('loaded'))
                 return;
@@ -266,6 +278,7 @@
 
             // Hide original img.
             $image_img.hide();
+            disableImageActions($image.add($image_img));
 
             lazyThumbs.push({
                 image: $image,
@@ -329,6 +342,7 @@
             },
             onPopupOpen: function () {
                 $body.addClass('modal-active');
+                disableImageActions($('.poptrox-popup img, .poptrox-popup .pic'));
             },
             overlayOpacity: 0,
             popupCloserText: '',
