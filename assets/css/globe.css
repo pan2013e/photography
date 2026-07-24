@@ -9,6 +9,48 @@
 	--atlas-cream: #ffffff;
 }
 
+html,
+body {
+	height: 100%;
+	overflow: hidden;
+}
+
+body {
+	height: 100vh;
+	height: 100dvh;
+}
+
+#wrapper {
+	height: 100%;
+	overflow: hidden;
+}
+
+#main {
+	height: 100%;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	scrollbar-color: rgba(52, 165, 142, 0.52) rgba(0, 0, 0, 0.12);
+	scrollbar-width: thin;
+}
+
+#main::-webkit-scrollbar {
+	width: 0.45rem;
+}
+
+#main::-webkit-scrollbar-track {
+	background: rgba(0, 0, 0, 0.12);
+}
+
+#main::-webkit-scrollbar-thumb {
+	background: rgba(52, 165, 142, 0.52);
+	border-radius: 999px;
+}
+
+body.content-active #main,
+body.modal-active #main {
+	overflow: hidden;
+}
+
 html.content-active,
 body.content-active {
 	overflow: hidden;
@@ -27,6 +69,24 @@ body.modal-active .panel {
 	pointer-events: none;
 	transition: none;
 	visibility: hidden;
+}
+
+body.modal-active #wrapper {
+	-webkit-filter: none;
+	filter: none;
+}
+
+body.modal-active #main,
+body.modal-active #header {
+	-webkit-filter: blur(8px);
+	filter: blur(8px);
+}
+
+body.modal-active #wrapper::after {
+	bottom: 0;
+	height: auto;
+	position: fixed;
+	right: 0;
 }
 
 #world-map.globe-panel,
@@ -889,7 +949,16 @@ body.modal-active .panel {
 	margin-right: 0.35rem;
 }
 
+.poptrox-popup .caption:not(.has-exif) {
+	display: none !important;
+}
+
 @media screen and (max-width: 736px) {
+	.poptrox-popup .caption.has-exif {
+		display: block !important;
+		padding: 2.5rem 0.8rem 0.15rem;
+	}
+
 	.poptrox-popup .caption p {
 		gap: 0.25rem 0.75rem;
 		margin-bottom: 0.6rem;

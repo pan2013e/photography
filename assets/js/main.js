@@ -339,19 +339,49 @@
             });
         }
 
+        function exifCaptionMarkup(data) {
+            return '<p class="exif-caption" aria-live="polite">' + (data || '') + '</p>';
+        }
+
+        function updateActiveExifCaption(image, data) {
+            var $activeImage = $('.poptrox-popup .pic img');
+
+            if ($activeImage.length == 0 || $activeImage[0] !== image)
+                return;
+
+            $('.poptrox-popup .caption')
+                .toggleClass('has-exif', Boolean(data))
+                .trigger('update', [exifCaptionMarkup(data)]);
+        }
+
         // Poptrox.
         $main.poptrox({
             baseZIndex: 20000,
             caption: function ($a) {
                 var $image_img = $a.children('img');
-                var data = exifDatas[$image_img.data('name')];
+                var imageName = $image_img.data('name');
+                var data = exifDatas[imageName];
+
                 if (data === undefined) {
-                    // EXIF data					
-                    EXIF.getData($image_img[0], function () {
-                        data = exifDatas[$image_img.data('name')] = getExifDataMarkup(this);
-                    });
+                    var popupImage = $('.poptrox-popup .pic img')[0];
+
+                    if (popupImage) {
+                        EXIF.getData(popupImage, function () {
+                            data = exifDatas[imageName] = getExifDataMarkup(this);
+
+                            // The caption callback is synchronous, while EXIF parsing is not.
+                            // Update only if this image is still the active popup.
+                            window.requestAnimationFrame(function () {
+                                updateActiveExifCaption(popupImage, data);
+                            });
+                        });
+                    }
                 }
-                return data !== undefined ? '<p>' + data + '</p>' : ' ';
+
+                $('.poptrox-popup .caption')
+                    .toggleClass('has-exif', Boolean(data));
+
+                return exifCaptionMarkup(data);
             },
             fadeSpeed: 300,
             onPopupClose: function () {
@@ -378,6 +408,11 @@
             usePopupNav: true,
             windowMargin: 50
         });
+
+        $('.poptrox-popup')
+            .on('poptrox_switch poptrox_reset', function () {
+                $(this).find('.caption').removeClass('has-exif');
+            });
 
         // Hack: Set margins to 0 when 'xsmall' activates.
         skel
