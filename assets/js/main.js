@@ -19,6 +19,7 @@
     $(function () {
 
         var $window = $(window),
+            $html = $('html'),
             $body = $('body'),
             $wrapper = $('#wrapper');
 
@@ -66,7 +67,27 @@
         $('form').placeholder();
 
         // Panels.
-        var $panels = $('.panel');
+        var $panels = $('.panel'),
+            lockedScrollY = 0;
+
+        function lockPageScroll() {
+            if ($html.hasClass('content-active'))
+                return;
+
+            lockedScrollY = $window.scrollTop();
+            $body.css('top', -lockedScrollY + 'px');
+            $html.addClass('content-active');
+            $body.addClass('content-active');
+        }
+
+        function unlockPageScroll() {
+            if (!$html.hasClass('content-active'))
+                return;
+
+            $html.removeClass('content-active');
+            $body.removeClass('content-active').css('top', '');
+            $window.scrollTop(lockedScrollY);
+        }
 
         $panels.each(function () {
 
@@ -100,11 +121,12 @@
                         $panels.trigger('---hide');
 
                     // Activate content, toggles.
+                    $this.find('.globe-explorer, .airport-explorer').scrollTop(0);
                     $this.addClass('active');
                     $toggles.addClass('active');
 
                     // Activate body.
-                    $body.addClass('content-active');
+                    lockPageScroll();
 
                 })
                 .on('---hide', function () {
@@ -113,8 +135,9 @@
                     $this.removeClass('active');
                     $toggles.removeClass('active');
 
-                    // Deactivate body.
-                    $body.removeClass('content-active');
+                    // Deactivate body when no other panel is open.
+                    if (!$panels.filter('.active').length)
+                        unlockPageScroll();
 
                 });
 
@@ -243,12 +266,6 @@
             $image.data('loaded', true);
             $image.css('background-image', 'url(' + src + ')');
 
-            $image_img.one("load", function() {
-                EXIF.getData(img, function () {
-                    exifDatas[$image_img.data('name')] = getExifDataMarkup(this);
-                });
-            });
-
             if (!$image_img.attr('src')) {
                 img.loading = 'eager';
                 $image_img.attr('src', src);
@@ -341,6 +358,8 @@
                 $body.removeClass('modal-active');
             },
             onPopupOpen: function () {
+                $panels.trigger('---hide');
+                unlockPageScroll();
                 $body.addClass('modal-active');
                 disableImageActions($('.poptrox-popup img, .poptrox-popup .pic'));
             },
@@ -369,35 +388,141 @@
                 $main[0]._poptrox.windowMargin = 0;
             });
 
+        function cleanExifText(value) {
+            return String(value == null ? '' : value)
+                .replace(/\0/g, '')
+                .trim();
+        }
+
+        function escapeExifText(value) {
+            return cleanExifText(value).replace(/[&<>"']/g, function(character) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                }[character];
+            });
+        }
+
+        function positiveExifNumber(value) {
+            if (Array.isArray(value))
+                value = value[0];
+
+            var number = Number(value);
+            return Number.isFinite(number) && number > 0 ? number : null;
+        }
+
+        function conciseExifNumber(value, maximumDecimals) {
+            return Number(value.toFixed(maximumDecimals)).toString();
+        }
+
+        function formatAperture(value) {
+            var aperture = positiveExifNumber(value);
+            if (aperture === null)
+                return null;
+
+            return 'f/' + conciseExifNumber(aperture, aperture < 1 ? 2 : 1);
+        }
+
+        function greatestCommonDivisor(first, second) {
+            first = Math.abs(first);
+            second = Math.abs(second);
+
+            while (second) {
+                var remainder = first % second;
+                first = second;
+                second = remainder;
+            }
+
+            return first;
+        }
+
+        function formatExposureTime(value) {
+            var text = cleanExifText(value);
+            var fraction = text.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
+            var seconds;
+
+            if (fraction) {
+                var numerator = Number(fraction[1]);
+                var denominator = Number(fraction[2]);
+                if (!Number.isFinite(numerator) || !Number.isFinite(denominator) ||
+                    numerator <= 0 || denominator <= 0)
+                    return null;
+
+                if (Number.isInteger(numerator) && Number.isInteger(denominator)) {
+                    var divisor = greatestCommonDivisor(numerator, denominator);
+                    var reducedNumerator = numerator / divisor;
+                    var reducedDenominator = denominator / divisor;
+                    if (reducedNumerator === 1 && reducedDenominator > 1)
+                        return '1/' + reducedDenominator + ' s';
+                }
+
+                seconds = numerator / denominator;
+            }
+            else {
+                seconds = positiveExifNumber(value);
+            }
+
+            if (seconds === null || !Number.isFinite(seconds) || seconds <= 0)
+                return null;
+
+            if (seconds >= 1)
+                return conciseExifNumber(seconds, 2) + ' s';
+
+            var reciprocal = 1 / seconds;
+            var roundedReciprocal = Math.round(reciprocal);
+            var reciprocalTolerance = Math.max(0.02, roundedReciprocal * 0.001);
+            if (Math.abs(reciprocal - roundedReciprocal) <= reciprocalTolerance)
+                return '1/' + roundedReciprocal + ' s';
+
+            return conciseExifNumber(seconds, seconds < 0.01 ? 4 : 3) + ' s';
+        }
+
+        function formatExifValue(tag, value) {
+            if (tag === 'FocalLengthIn35mmFilm') {
+                var focalLength = positiveExifNumber(value);
+                return focalLength === null ? null : conciseExifNumber(focalLength, 1) + ' mm';
+            }
+
+            if (tag === 'FNumber')
+                return formatAperture(value);
+
+            if (tag === 'ExposureTime')
+                return formatExposureTime(value);
+
+            if (tag === 'ISOSpeedRatings') {
+                var iso = positiveExifNumber(value);
+                return iso === null ? null : 'ISO ' + Math.round(iso);
+            }
+
+            var text = escapeExifText(value);
+            return text || null;
+        }
+
         function getExifDataMarkup(img) {
             var exif = $('#main').data('exif');
-            var template = '';
+            var items = [];
+
             for (var current in exif) {
-                var current_data = exif[current];
-                var exif_data = EXIF.getTag(img, current_data['tag']);
-                if (typeof exif_data !== "undefined") {
-                    if (current_data['tag'] === 'FocalLengthIn35mmFilm') {
-                        template += exif_data + ' mm';
-                    }
-                    else if (current_data['tag'] === 'FNumber') {
-                        template += 'f/' + exif_data;
-                    }
-                    else if (current_data['tag'] === 'ExposureTime') {
-                        if (exif_data.endsWith('/1')) {
-                            exif_data = exif_data.substring(0, exif_data.length - 2);
-                        }
-                        template += exif_data + ' s';
-                    }
-                    else if (current_data['tag'] === 'ISOSpeedRatings') {
-                        template += 'ISO ' + exif_data;
-                    }
-                    else {
-                        template += '<i class="fa fa-' + current_data['icon'] + '" aria-hidden="true"></i> ' + exif_data;
-                    }
-                    template += '&nbsp;&nbsp;&nbsp;';
-                }
+                var currentData = exif[current];
+                var tag = currentData['tag'];
+                var value = EXIF.getTag(img, tag);
+                if (typeof value === 'undefined' || value === null)
+                    continue;
+
+                var formatted = formatExifValue(tag, value);
+                if (!formatted)
+                    continue;
+
+                var icon = tag === 'Model'
+                    ? '<i class="fa fa-' + currentData['icon'] + '" aria-hidden="true"></i>'
+                    : '';
+                items.push('<span class="exif-item">' + icon + formatted + '</span>');
             }
-            return template;
+
+            return items.join('');
         }
 
     });
