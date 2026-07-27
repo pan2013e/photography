@@ -1,0 +1,30 @@
+{% assign story = include.story %}
+{% if story.date_label %}
+<time datetime="{{ story.date | date: '%Y-%m-%d' }}">{{ story.date_label }}</time>
+{% elsif story.dates and story.dates.size > 0 %}
+<span class="story-date-list">
+    {% for date_entry in story.dates %}
+        {% if date_entry.label %}
+            {% if date_entry.start %}
+            <time datetime="{{ date_entry.start | date: '%Y-%m-%d' }}">{{ date_entry.label }}</time>
+            {% else %}
+            <span>{{ date_entry.label }}</span>
+            {% endif %}
+        {% elsif date_entry.start %}
+            {% assign start_iso = date_entry.start | date: "%Y-%m-%d" %}
+            {% assign end_iso = date_entry.end | date: "%Y-%m-%d" %}
+            <time datetime="{{ start_iso }}">{{ date_entry.start | date: "%b %-d, %Y" }}</time>
+            {% if date_entry.end and end_iso != start_iso %}
+            <span class="story-date-range" aria-hidden="true">&ndash;</span>
+            <span class="sr-only">through</span>
+            <time datetime="{{ end_iso }}">{{ date_entry.end | date: "%b %-d, %Y" }}</time>
+            {% endif %}
+        {% else %}
+            <span>{{ date_entry }}</span>
+        {% endif %}
+        {% unless forloop.last %}<span class="story-date-divider" aria-hidden="true">/</span>{% endunless %}
+    {% endfor %}
+</span>
+{% elsif story.date %}
+<time datetime="{{ story.date | date: '%Y-%m-%d' }}">{{ story.date | date: "%B %Y" }}</time>
+{% endif %}

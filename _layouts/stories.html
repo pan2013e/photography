@@ -1,0 +1,40 @@
+---
+layout: default
+---
+
+{% assign published_stories = site.stories | where_exp: "story", "story.published != false" | sort: "date" | reverse %}
+<section class="stories-page">
+    <header class="stories-heading">
+        <p class="story-eyebrow">Photo journal</p>
+        <h1>{{ page.title | default: "Stories" }}</h1>
+        <p>{{ page.description | default: "Photographs gathered into journeys, walks, and field notes." }}</p>
+    </header>
+
+    <div class="story-card-grid">
+        {% for story in published_stories %}
+            {% if story.hero.file %}
+                {% capture card_image %}{{ site.image_thumbs_loc }}/{{ story.hero.file }}{% endcapture %}
+            {% else %}
+                {% assign card_image = story.hero.thumb | default: story.hero.src %}
+            {% endif %}
+            <article class="story-card">
+                <a href="{{ story.url | relative_url }}">
+                    {% if card_image %}
+                    <span class="story-card-image">
+                        <img src="{{ card_image | relative_url }}" alt="" loading="lazy" decoding="async">
+                    </span>
+                    {% endif %}
+                    <span class="story-card-copy">
+                        <span class="story-card-meta">
+                            {% include story-dates.html story=story %}
+                            {% if story.location %}<span>{{ story.location }}</span>{% endif %}
+                        </span>
+                        <strong>{{ story.title }}</strong>
+                        {% if story.description %}<span class="story-card-summary">{{ story.description }}</span>{% endif %}
+                        <span class="story-card-link">Read story <i class="fa fa-arrow-right" aria-hidden="true"></i></span>
+                    </span>
+                </a>
+            </article>
+        {% endfor %}
+    </div>
+</section>

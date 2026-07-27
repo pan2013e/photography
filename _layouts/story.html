@@ -1,0 +1,46 @@
+---
+layout: default
+---
+
+<article class="story-page">
+    <header class="story-masthead">
+        <div class="story-masthead-copy">
+            <p class="story-eyebrow">{{ page.eyebrow | default: "Field notes" }}</p>
+            <h1>{{ page.title }}</h1>
+            {% if page.description %}<p class="story-deck">{{ page.description }}</p>{% endif %}
+            <div class="story-meta">
+                {% include story-dates.html story=page %}
+                {% if page.location %}<span>{{ page.location }}</span>{% endif %}
+            </div>
+        </div>
+
+        {% if page.hero %}
+            {% if page.hero.file %}
+                {% capture hero_full %}{{ site.image_fulls_loc }}/{{ page.hero.file }}{% endcapture %}
+                {% capture hero_thumb %}{{ site.image_thumbs_loc }}/{{ page.hero.file }}{% endcapture %}
+                {% assign hero_key = page.hero.file %}
+            {% else %}
+                {% assign hero_full = page.hero.src %}
+                {% assign hero_thumb = page.hero.thumb | default: page.hero.src %}
+                {% assign hero_key = page.hero.name | default: page.hero.src %}
+            {% endif %}
+            <figure class="story-photo story-hero-photo">
+                <a href="{{ hero_full | relative_url }}" class="image">
+                    <img
+                        data-src="{{ hero_thumb | relative_url }}"
+                        data-name="{{ hero_key | escape }}"
+                        {% if page.hero.position %}data-position="{{ page.hero.position }}"{% endif %}
+                        alt="{{ page.hero.alt | default: page.title | escape }}"
+                        loading="eager"
+                        decoding="async"
+                    >
+                </a>
+                {% if page.hero.caption %}<figcaption>{{ page.hero.caption }}</figcaption>{% endif %}
+            </figure>
+        {% endif %}
+    </header>
+
+    <div class="story-body">
+        {{ content }}
+    </div>
+</article>

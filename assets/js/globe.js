@@ -19,6 +19,7 @@
     featurePaths: [],
     destinationMarkers: [],
     hoveredFeature: null,
+    meridianFeature: null,
     rotationLon: 24,
     rotationLat: 18,
     radius: 0,
@@ -198,6 +199,48 @@
     return hasVisiblePoint ? path : null;
   }
 
+  function findFeatureOnMeridian() {
+    if (!state.featurePaths.length) return null;
+
+    const step = Math.max(3, state.radius / 90);
+    const maximumOffset = state.radius * 0.9;
+
+    context.save();
+    context.setTransform(1, 0, 0, 1, 0, 0);
+
+    for (let offset = 0; offset <= maximumOffset; offset += step) {
+      const sampleYs = offset === 0
+        ? [state.centerY]
+        : [state.centerY - offset, state.centerY + offset];
+
+      for (let sampleIndex = 0; sampleIndex < sampleYs.length; sampleIndex += 1) {
+        for (let featureIndex = state.featurePaths.length - 1; featureIndex >= 0; featureIndex -= 1) {
+          const item = state.featurePaths[featureIndex];
+          if (
+            item.country &&
+            context.isPointInPath(item.path, state.centerX, sampleYs[sampleIndex])
+          ) {
+            context.restore();
+            return item.feature;
+          }
+        }
+      }
+    }
+
+    context.restore();
+    return null;
+  }
+
+  function syncMeridianFeature(feature) {
+    if (state.meridianFeature === feature) return;
+
+    state.meridianFeature = feature;
+    if (!state.hoveredFeature) {
+      setSelection(feature, 'meridian');
+      updateActiveCountry(countryForFeature(feature));
+    }
+  }
+
   function drawCountries() {
     state.featurePaths = [];
 
@@ -205,7 +248,7 @@
       context.fillStyle = 'rgba(236, 226, 201, 0.15)';
       context.font = '12px sans-serif';
       context.textAlign = 'center';
-      context.fillText('Loading the atlas…', state.centerX, state.centerY);
+      context.fillText('Drawing the globe...', state.centerX, state.centerY);
       return;
     }
 
@@ -213,20 +256,38 @@
       const path = createFeaturePath(feature);
       if (!path) return;
 
-      const availableCountry = countryForFeature(feature);
-      const isHovered = state.hoveredFeature === feature;
+      state.featurePaths.push({
+        feature,
+        path,
+        country: countryForFeature(feature)
+      });
+    });
 
+    syncMeridianFeature(findFeatureOnMeridian());
+
+    state.featurePaths.forEach(item => {
+      const availableCountry = item.country;
+      const isHovered = state.hoveredFeature === item.feature;
+      const isOnMeridian = state.meridianFeature === item.feature;
+      const isHighlighted = isHovered || isOnMeridian;
+
+      context.save();
+      if (isOnMeridian) {
+        context.shadowColor = availableCountry
+          ? 'rgba(111, 214, 193, 0.72)'
+          : 'rgba(169, 193, 188, 0.42)';
+        context.shadowBlur = 14;
+      }
       context.fillStyle = availableCountry
-        ? (isHovered ? '#6fd6c1' : '#34a58e')
-        : (isHovered ? 'rgba(169, 193, 188, 0.46)' : 'rgba(154, 179, 175, 0.23)');
+        ? (isHighlighted ? '#6fd6c1' : '#34a58e')
+        : (isHighlighted ? 'rgba(169, 193, 188, 0.52)' : 'rgba(154, 179, 175, 0.23)');
       context.strokeStyle = availableCountry
-        ? 'rgba(111, 214, 193, 0.78)'
-        : 'rgba(208, 225, 221, 0.22)';
-      context.lineWidth = isHovered ? 1.35 : 0.65;
-      context.fill(path);
-      context.stroke(path);
-
-      state.featurePaths.push({ feature, path });
+        ? (isHighlighted ? 'rgba(217, 255, 247, 0.95)' : 'rgba(111, 214, 193, 0.78)')
+        : (isHighlighted ? 'rgba(222, 239, 235, 0.72)' : 'rgba(208, 225, 221, 0.22)');
+      context.lineWidth = isHighlighted ? 1.45 : 0.65;
+      context.fill(item.path);
+      context.stroke(item.path);
+      context.restore();
     });
   }
 
@@ -239,14 +300,14 @@
       if (!projected.visible) return;
 
       const feature = featureForCountry(country);
-      const hoveredCountry = countryForFeature(state.hoveredFeature);
-      const isHovered = hoveredCountry && hoveredCountry.code === country.code;
-      const radius = isHovered ? 5.5 : 3.25;
+      const activeCountry = countryForFeature(state.hoveredFeature || state.meridianFeature);
+      const isActive = activeCountry && activeCountry.code === country.code;
+      const radius = isActive ? 5.5 : 3.25;
 
       context.save();
       context.shadowColor = '#34a58e';
-      context.shadowBlur = isHovered ? 18 : 9;
-      context.fillStyle = isHovered ? '#d9fff7' : '#6fd6c1';
+      context.shadowBlur = isActive ? 18 : 9;
+      context.fillStyle = isActive ? '#d9fff7' : '#6fd6c1';
       context.beginPath();
       context.arc(projected.x, projected.y, radius, 0, Math.PI * 2);
       context.fill();
@@ -263,6 +324,23 @@
         hitRadius: Math.max(10, radius + 5)
       });
     });
+  }
+
+  function drawVirtualMeridian() {
+    const meridian = [];
+    for (let lat = -89; lat <= 89; lat += 2) {
+      meridian.push([state.rotationLon, lat]);
+    }
+
+    context.save();
+    context.setLineDash([2, 8]);
+    context.lineCap = 'round';
+    context.lineWidth = 0.65;
+    context.strokeStyle = 'rgba(184, 255, 240, 0.24)';
+    context.shadowColor = 'rgba(111, 214, 193, 0.28)';
+    context.shadowBlur = 2;
+    drawProjectedLine(meridian);
+    context.restore();
   }
 
   function drawGlobe() {
@@ -342,6 +420,7 @@
       state.radius * 2,
       state.radius * 2
     );
+    drawVirtualMeridian();
     context.restore();
 
     context.strokeStyle = 'rgba(196, 222, 216, 0.28)';
@@ -378,21 +457,23 @@
     return null;
   }
 
-  function setSelection(feature) {
+  function setSelection(feature, source) {
     if (!feature) {
       selection.classList.remove('is-available');
-      selection.querySelector('strong').textContent = 'Select a country';
-      selection.querySelector('small').textContent = 'Highlighted countries open galleries.';
+      selection.classList.toggle('is-meridian', source === 'meridian');
+      selection.querySelector('strong').textContent = 'Let the globe turn';
+      selection.querySelector('small').textContent = 'The center guide will find a gallery.';
       return;
     }
 
     const availableCountry = countryForFeature(feature);
     const name = availableCountry ? availableCountry.name : feature.properties.name;
     selection.querySelector('strong').textContent = name;
-    selection.querySelector('small').textContent = availableCountry
-      ? 'Open gallery'
-      : 'No gallery';
+    selection.querySelector('small').textContent = source === 'meridian'
+      ? 'Gallery on the center line'
+      : (availableCountry ? 'View gallery' : 'No photographs here yet');
     selection.classList.toggle('is-available', Boolean(availableCountry));
+    selection.classList.toggle('is-meridian', source === 'meridian');
   }
 
   function updateActiveCountry(country) {
@@ -414,6 +495,9 @@
     state.startLat = state.rotationLat;
     state.moved = false;
     state.hasInteracted = true;
+    state.hoveredFeature = null;
+    setSelection(state.meridianFeature, 'meridian');
+    updateActiveCountry(countryForFeature(state.meridianFeature));
     canvas.setPointerCapture(event.pointerId);
   }
 
@@ -435,7 +519,7 @@
       state.hoveredFeature = feature;
       const available = countryForFeature(feature);
       canvas.style.cursor = available ? 'pointer' : 'grab';
-      setSelection(feature);
+      setSelection(feature, 'pointer');
       updateActiveCountry(available);
       requestDraw();
     }
@@ -448,7 +532,7 @@
     const available = countryForFeature(feature);
 
     if (!state.moved && available) navigateToCountry(available);
-    if (!state.moved && feature) setSelection(feature);
+    if (!state.moved && feature) setSelection(feature, 'pointer');
 
     state.pointerId = null;
     if (canvas.hasPointerCapture(event.pointerId)) {
@@ -468,8 +552,8 @@
     if (state.pointerId !== null) return;
     state.hoveredFeature = null;
     canvas.style.cursor = 'grab';
-    setSelection(null);
-    updateActiveCountry(null);
+    setSelection(state.meridianFeature, 'meridian');
+    updateActiveCountry(countryForFeature(state.meridianFeature));
     requestDraw();
   }
 
@@ -483,7 +567,9 @@
     if (event.key === 'ArrowRight') state.rotationLon += 8;
     if (event.key === 'ArrowUp') state.rotationLat = Math.min(72, state.rotationLat + 6);
     if (event.key === 'ArrowDown') state.rotationLat = Math.max(-72, state.rotationLat - 6);
-    if (event.key === 'Enter') navigateToCountry(countryForFeature(state.hoveredFeature));
+    if (event.key === 'Enter') {
+      navigateToCountry(countryForFeature(state.hoveredFeature || state.meridianFeature));
+    }
     requestDraw();
   }
 
@@ -492,7 +578,7 @@
     if (!feature) return;
 
     state.hoveredFeature = feature;
-    setSelection(feature);
+    setSelection(feature, 'pointer');
     updateActiveCountry(country);
     requestDraw();
   }
@@ -508,7 +594,7 @@
 
       button.type = 'button';
       button.dataset.code = country.code;
-      button.setAttribute('aria-label', `Open ${country.name} photo gallery`);
+      button.setAttribute('aria-label', `View the ${country.name} photo gallery`);
       code.className = 'country-code';
       code.textContent = country.code;
       name.className = 'country-name';
@@ -544,7 +630,7 @@
     if (!visibleCount && !empty) {
       empty = document.createElement('li');
       empty.className = 'empty-result';
-      empty.textContent = 'No destination matches that search.';
+      empty.textContent = 'No galleries match that search.';
       countryList.appendChild(empty);
     } else if (visibleCount && empty) {
       empty.remove();
@@ -557,6 +643,7 @@
     state.hasInteracted = false;
     state.lastFrame = performance.now();
     state.hoveredFeature = null;
+    state.meridianFeature = null;
     setSelection(null);
     updateActiveCountry(null);
     requestDraw();
@@ -639,8 +726,8 @@
       buildCountryList();
       requestDraw();
     }).catch(error => {
-      selection.querySelector('strong').textContent = 'Could not load';
-      selection.querySelector('small').textContent = 'Refresh and try again.';
+      selection.querySelector('strong').textContent = 'The globe is unavailable';
+      selection.querySelector('small').textContent = 'Refresh the page to try again.';
       console.error(error);
     });
   }

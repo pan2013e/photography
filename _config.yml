@@ -1,16 +1,27 @@
-# baseurl: "https://pan2013e.github.io/photography"  # Comment it for local testing
+url: "https://pan2013e.github.io"
+baseurl: "/photography"
 top_url: "https://pan2013e.github.io"
 image_fulls_loc: "/images/fulls"
 image_thumbs_loc: "/images/thumbs"
+collections:
+  stories:
+    output: true
+    permalink: /story-:name
+defaults:
+  - scope:
+      path: ""
+      type: stories
+    values:
+      layout: story
 category:
+  - title: '<i class="fa fa-book fa-lg" aria-hidden="true"></i>'
+    page: "/stories"
   - title: '<i class="fa fa-globe fa-lg" aria-hidden="true"></i>'
     page: "#world-map"
   - title: '<i class="fa fa-plane fa-lg" aria-hidden="true"></i>'
     page: "#airport-selector"
   - title: '<i class="fa fa-paw" aria-hidden="true"></i>'
-    page: "/photography/wildlife"
-  - title: '<i class="fa fa-university" aria-hidden="true"></i>'
-    page: "/photography/unesco"
+    page: "/wildlife"
 
 title: "Photography by Zhiyuan Pan"
 subtitle: "See the world through my eyes!"

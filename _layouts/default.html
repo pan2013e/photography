@@ -3,7 +3,7 @@
 <head>
     {% include header.html %}
 </head>
-<body>
+<body{% if page.layout == 'story' or page.layout == 'stories' %} class="story-view"{% endif %}>
     <div id="wrapper">
         <header id="header">
             <nav>
@@ -12,10 +12,14 @@
                         <a href="{{ site.top_url }}"><i class="fa fa-arrow-left fa-lg" aria-hidden="true"></i></a>
                     </li>
                     <li>
-                        <a href="/photography"><i class="fa fa-home fa-lg" aria-hidden="true"></i></a>
+                        <a href="{{ '/' | relative_url }}"><i class="fa fa-home fa-lg" aria-hidden="true"></i></a>
                     </li>
                     {% for cat in site.category %}
+                    {% if cat.page contains '#' %}
                     <li><a href="{{ cat.page }}">{{ cat.title }}</a></li>
+                    {% else %}
+                    <li><a href="{{ cat.page | relative_url }}">{{ cat.title }}</a></li>
+                    {% endif %}
                     {% endfor %}
                     <li>
                         <a href="#footer"><i class="fa fa-info-circle fa-lg" aria-hidden="true"></i></a>
@@ -29,8 +33,8 @@
         <footer id="world-map" class="panel globe-panel" aria-label="Explore photo galleries by country">
             <div
                 class="globe-explorer"
-                data-geo-url="{{ site.baseurl }}/assets/countries.geo.json"
-                data-countries-url="{{ site.baseurl }}/assets/available_countries.json"
+                data-geo-url="{{ '/assets/countries.geo.json' | relative_url }}"
+                data-countries-url="{{ '/assets/available_countries.json' | relative_url }}"
             >
                 <section class="globe-hero">
                     <div class="globe-heading">
@@ -44,14 +48,14 @@
                             id="country-globe"
                             role="img"
                             tabindex="0"
-                            aria-label="Interactive globe. Drag to rotate. Use the arrow keys to rotate with a keyboard."
+                            aria-label="Interactive globe with a center meridian that highlights the current country. Drag to rotate, or use the arrow keys."
                         ></canvas>
                         <div class="globe-hud" aria-hidden="true">
-                            <span><i class="fa fa-hand-paper-o"></i> Drag &middot; select highlighted</span>
+                            <span><i class="fa fa-crosshairs"></i> Center guide &middot; drag to explore</span>
                         </div>
                         <div id="globe-selection" class="globe-selection" aria-live="polite">
-                            <strong>Select a country</strong>
-                            <small>Highlighted countries open galleries.</small>
+                            <strong>Let the globe turn</strong>
+                            <small>The center guide will find a gallery.</small>
                         </div>
                         <button id="globe-reset" class="globe-reset" type="button" aria-label="Reset globe view">
                             <i class="fa fa-compass" aria-hidden="true"></i>
@@ -68,7 +72,7 @@
                             <input
                                 id="country-search"
                                 type="search"
-                                placeholder="Search destinations"
+                                placeholder="Find a country"
                                 autocomplete="off"
                                 aria-keyshortcuts="/"
                             >
@@ -82,7 +86,7 @@
         <footer id="airport-selector" class="panel airport-panel" aria-label="Explore photo galleries by airport">
             <div
                 class="airport-explorer"
-                data-airports-url="{{ site.baseurl }}/assets/available_airports.json"
+                data-airports-url="{{ '/assets/available_airports.json' | relative_url }}"
             >
                 <div class="airport-sticky">
                     <header class="airport-heading">
@@ -100,7 +104,7 @@
                             <input
                                 id="airport-search"
                                 type="search"
-                                placeholder="Search airport, city, IATA or ICAO"
+                                placeholder="Find an airport or city"
                                 autocomplete="off"
                                 aria-keyshortcuts="/"
                             >
@@ -109,7 +113,7 @@
                     </div>
                 </div>
                 <ul id="airport-list" class="airport-grid" aria-label="Available airport galleries"></ul>
-                <p id="airport-empty" class="airport-empty" hidden>No airport matches that search.</p>
+                <p id="airport-empty" class="airport-empty" hidden>No galleries match that search.</p>
             </div>
         </footer>
         <footer id="footer" class="panel">

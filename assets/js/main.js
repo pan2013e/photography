@@ -249,9 +249,38 @@
                 });
         }
 
-        $main.on('contextmenu dragstart', '.thumb, .thumb .image, .thumb img', function(event) {
+        $main.on('contextmenu dragstart',
+            '.thumb, .thumb .image, .thumb img, .story-photo, .story-photo .image, .story-photo img',
+            function(event) {
             event.preventDefault();
         });
+
+        function applyStoryPhotoOrientation($image_img) {
+            var img = $image_img[0],
+                $photo = $image_img.closest('.story-photo'),
+                $strip = $photo.closest('.story-photo-strip'),
+                ratio,
+                orientation;
+
+            if (
+                !$strip.length ||
+                $photo.hasClass('has-explicit-ratio') ||
+                !img.naturalWidth ||
+                !img.naturalHeight
+            )
+                return;
+
+            ratio = img.naturalWidth / img.naturalHeight;
+            orientation = ratio < 0.9
+                ? 'portrait'
+                : (ratio <= 1.1 ? 'square' : 'landscape');
+
+            $photo
+                .removeClass('is-photo-portrait is-photo-square is-photo-landscape')
+                .addClass('is-photo-' + orientation);
+
+            $strip[0].dispatchEvent(new CustomEvent('storyorientationchange'));
+        }
 
         function loadThumb($image, $image_img) {
             if ($image.data('loaded'))
@@ -270,12 +299,19 @@
                 img.loading = 'eager';
                 $image_img.attr('src', src);
             }
+
+            if (img.complete && img.naturalWidth)
+                applyStoryPhotoOrientation($image_img);
+            else
+                $image_img.one('load.storyOrientation', function () {
+                    applyStoryPhotoOrientation($image_img);
+                });
         }
 
         var lazyThumbs = [];
 
         // Thumbs.
-        $main.children('.thumb').each(function () {
+        $main.find('.thumb, .story-photo').each(function () {
 
             var $this = $(this),
                 $image = $this.find('.image'), $image_img = $image.children('img'),
@@ -339,89 +375,315 @@
             });
         }
 
+        function applyStoryVideoOrientation(video) {
+            var $video = $(video),
+                $card = $video.closest('.story-video-card'),
+                $block = $video.closest('.story-video-block'),
+                $container = $card.length ? $card : $block,
+                ratio,
+                orientation;
+
+            if (
+                !$container.length ||
+                $container.hasClass('has-explicit-ratio') ||
+                !video.videoWidth ||
+                !video.videoHeight
+            )
+                return;
+
+            ratio = video.videoWidth / video.videoHeight;
+            orientation = ratio < 0.9
+                ? 'portrait'
+                : (ratio <= 1.1 ? 'square' : 'landscape');
+
+            if ($card.length) {
+                $card
+                    .removeClass('is-photo-portrait is-photo-square is-photo-landscape')
+                    .addClass('is-photo-' + orientation);
+                $card.closest('.story-photo-strip')[0]
+                    .dispatchEvent(new CustomEvent('storyorientationchange'));
+            }
+            else {
+                $block
+                    .removeClass('is-video-portrait is-video-square is-video-landscape')
+                    .addClass('is-video-' + orientation);
+            }
+        }
+
+        $main.find('.story-video-player').each(function () {
+            var video = this;
+
+            if (video.readyState >= 1)
+                applyStoryVideoOrientation(video);
+            else
+                video.addEventListener('loadedmetadata', function () {
+                    applyStoryVideoOrientation(video);
+                }, { once: true });
+        });
+
         function exifCaptionMarkup(data) {
             return '<p class="exif-caption" aria-live="polite">' + (data || '') + '</p>';
         }
 
-        function updateActiveExifCaption(image, data) {
-            var $activeImage = $('.poptrox-popup .pic img');
+        function activePoptroxPopup() {
+            return $('.poptrox-popup:visible').last();
+        }
 
-            if ($activeImage.length == 0 || $activeImage[0] !== image)
+        function updateActiveExifCaption(image, data) {
+            var $popup = $(image).closest('.poptrox-popup'),
+                $activeImage = $popup.find('.pic img');
+
+            if (!$popup.is(':visible') || $activeImage.length == 0 || $activeImage[0] !== image)
                 return;
 
-            $('.poptrox-popup .caption')
+            $popup.find('.caption')
                 .toggleClass('has-exif', Boolean(data))
                 .trigger('update', [exifCaptionMarkup(data)]);
         }
 
-        // Poptrox.
-        $main.poptrox({
-            baseZIndex: 20000,
-            caption: function ($a) {
-                var $image_img = $a.children('img');
-                var imageName = $image_img.data('name');
-                var data = exifDatas[imageName];
+        function lightboxCaption($a) {
+            var $image_img = $a.children('img'),
+                imageName = $image_img.data('name'),
+                data = exifDatas[imageName],
+                $popup = activePoptroxPopup();
 
-                if (data === undefined) {
-                    var popupImage = $('.poptrox-popup .pic img')[0];
+            if (data === undefined) {
+                var popupImage = $popup.find('.pic img')[0];
 
-                    if (popupImage) {
-                        EXIF.getData(popupImage, function () {
-                            data = exifDatas[imageName] = getExifDataMarkup(this);
+                if (popupImage) {
+                    disableImageActions($(popupImage).add($popup.find('.pic')));
+                    EXIF.getData(popupImage, function () {
+                        data = exifDatas[imageName] = getExifDataMarkup(this);
 
-                            // The caption callback is synchronous, while EXIF parsing is not.
-                            // Update only if this image is still the active popup.
-                            window.requestAnimationFrame(function () {
-                                updateActiveExifCaption(popupImage, data);
-                            });
+                        // The caption callback is synchronous, while EXIF parsing is not.
+                        // Update only if this image is still the active popup.
+                        window.requestAnimationFrame(function () {
+                            updateActiveExifCaption(popupImage, data);
                         });
-                    }
+                    });
                 }
+            }
 
-                $('.poptrox-popup .caption')
-                    .toggleClass('has-exif', Boolean(data));
+            $popup.find('.caption').toggleClass('has-exif', Boolean(data));
+            return exifCaptionMarkup(data);
+        }
 
-                return exifCaptionMarkup(data);
-            },
-            fadeSpeed: 300,
-            onPopupClose: function () {
-                $body.removeClass('modal-active');
-            },
-            onPopupOpen: function () {
-                $panels.trigger('---hide');
-                unlockPageScroll();
-                $body.addClass('modal-active');
-                disableImageActions($('.poptrox-popup img, .poptrox-popup .pic'));
-            },
-            overlayOpacity: 0,
-            popupCloserText: '',
-            popupHeight: 150,
-            popupLoaderText: '',
-            popupSpeed: 300,
-            popupWidth: 150,
-            selector: '.thumb > a.image',
-            usePopupCaption: true,
-            usePopupCloser: true,
-            usePopupDefaultStyling: false,
-            usePopupForceClose: true,
-            usePopupLoader: true,
-            usePopupNav: true,
-            windowMargin: 50
-        });
+        var poptroxContainers = [];
 
-        $('.poptrox-popup')
-            .on('poptrox_switch poptrox_reset', function () {
-                $(this).find('.caption').removeClass('has-exif');
+        function initializeLightbox($container, selector, useNavigation, groupIndex) {
+            if (!$container.length || !$container.find(selector).length)
+                return;
+
+            $container.poptrox({
+                baseZIndex: 20000,
+                caption: lightboxCaption,
+                fadeSpeed: 300,
+                onPopupClose: function () {
+                    $body.removeClass('modal-active');
+                },
+                onPopupOpen: function () {
+                    $panels.trigger('---hide');
+                    unlockPageScroll();
+                    $body.addClass('modal-active');
+                },
+                overlayOpacity: 0,
+                popupClass: 'poptrox-popup poptrox-group-' + groupIndex,
+                popupCloserText: '',
+                popupHeight: 150,
+                popupLoaderText: '',
+                popupNavNextSelector: useNavigation ? '.nav-next' : null,
+                popupNavPreviousSelector: useNavigation ? '.nav-previous' : null,
+                popupSpeed: 300,
+                popupWidth: 150,
+                selector: selector,
+                usePopupCaption: true,
+                usePopupCloser: true,
+                usePopupDefaultStyling: false,
+                usePopupForceClose: true,
+                usePopupLoader: true,
+                usePopupNav: useNavigation,
+                windowMargin: 50
             });
+
+            poptroxContainers.push($container[0]);
+        }
+
+        var $storyPage = $main.find('.story-page');
+
+        if ($storyPage.length) {
+            var $storyHero = $storyPage.find('.story-hero-photo');
+
+            initializeLightbox($storyHero, 'a.image', false, 'hero');
+            $storyPage.find('.story-photo-strip').each(function (index) {
+                var $strip = $(this),
+                    selector = '.story-photo > a.image';
+                initializeLightbox(
+                    $strip,
+                    selector,
+                    $strip.find(selector).length > 1,
+                    'strip-' + index
+                );
+            });
+        }
+        else {
+            initializeLightbox($main, '.thumb > a.image', true, 'gallery');
+        }
+
+        $('.poptrox-popup').on('poptrox_switch poptrox_reset', function () {
+            $(this).find('.caption').removeClass('has-exif');
+        });
 
         // Hack: Set margins to 0 when 'xsmall' activates.
         skel
             .on('-xsmall', function () {
-                $main[0]._poptrox.windowMargin = 50;
+                poptroxContainers.forEach(function (container) {
+                    container._poptrox.windowMargin = 50;
+                });
             })
             .on('+xsmall', function () {
-                $main[0]._poptrox.windowMargin = 0;
+                poptroxContainers.forEach(function (container) {
+                    container._poptrox.windowMargin = 0;
+                });
             });
+
+        function initializeStoryStripMotion() {
+            var motionIsReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            $main.find('.story-photo-strip').each(function () {
+                var strip = this,
+                    $strip = $(strip),
+                    $shell = $strip.closest('.story-strip-shell'),
+                    progressThumb = $shell.find('.story-strip-progress > span')[0],
+                    autoScrolling = !motionIsReduced,
+                    isVisible = true,
+                    direction = 1,
+                    lastTime = performance.now(),
+                    holdUntil = lastTime + 1400,
+                    frameId = null;
+
+                function maximumScroll() {
+                    return Math.max(0, strip.scrollWidth - strip.clientWidth);
+                }
+
+                function updateStripChrome() {
+                    var maximum = maximumScroll(),
+                        progress = maximum > 0 ? strip.scrollLeft / maximum : 0,
+                        thumbRatio = strip.scrollWidth > 0 ? strip.clientWidth / strip.scrollWidth : 1,
+                        thumbWidth = Math.max(8, Math.min(100, thumbRatio * 100)),
+                        thumbLeft = Math.max(0, Math.min(100 - thumbWidth, progress * (100 - thumbWidth)));
+
+                    $shell
+                        .toggleClass('is-static', maximum <= 1)
+                        .toggleClass('is-auto-scrolling', autoScrolling && maximum > 1)
+                        .toggleClass('has-scrolled', strip.scrollLeft > 2)
+                        .toggleClass('is-at-end', maximum <= 1 || strip.scrollLeft >= maximum - 2);
+
+                    if (progressThumb) {
+                        progressThumb.style.width = thumbWidth + '%';
+                        progressThumb.style.left = thumbLeft + '%';
+                    }
+                }
+
+                function stopAutomaticMotion() {
+                    if (!autoScrolling)
+                        return;
+
+                    autoScrolling = false;
+                    $shell.removeClass('is-auto-scrolling');
+                    if (frameId !== null) {
+                        window.cancelAnimationFrame(frameId);
+                        frameId = null;
+                    }
+                }
+
+                function scheduleAutomaticMotion() {
+                    if (
+                        autoScrolling &&
+                        isVisible &&
+                        !document.hidden &&
+                        maximumScroll() > 1 &&
+                        frameId === null
+                    ) {
+                        lastTime = performance.now();
+                        frameId = window.requestAnimationFrame(animateStrip);
+                    }
+                }
+
+                function handleVisibilityChange() {
+                    if (document.hidden && frameId !== null) {
+                        window.cancelAnimationFrame(frameId);
+                        frameId = null;
+                    }
+                    else {
+                        scheduleAutomaticMotion();
+                    }
+                }
+
+                function animateStrip(now) {
+                    var maximum = maximumScroll(),
+                        elapsed = Math.min(40, now - lastTime);
+
+                    frameId = null;
+
+                    if (maximum > 1 && now >= holdUntil) {
+                        strip.scrollLeft += direction * elapsed * 0.022;
+
+                        if (strip.scrollLeft >= maximum - 1) {
+                            strip.scrollLeft = maximum;
+                            direction = -1;
+                            holdUntil = now + 1100;
+                        }
+                        else if (strip.scrollLeft <= 1 && direction < 0) {
+                            strip.scrollLeft = 0;
+                            direction = 1;
+                            holdUntil = now + 1100;
+                        }
+                    }
+
+                    updateStripChrome();
+                    lastTime = now;
+                    scheduleAutomaticMotion();
+                }
+
+                ['pointerdown', 'touchstart', 'wheel'].forEach(function (eventName) {
+                    strip.addEventListener(eventName, stopAutomaticMotion, { passive: true });
+                });
+                strip.addEventListener('keydown', stopAutomaticMotion);
+                strip.addEventListener('scroll', updateStripChrome, { passive: true });
+                $strip.find('.story-video-player').on('play', stopAutomaticMotion);
+
+                if ('IntersectionObserver' in window) {
+                    new IntersectionObserver(function (entries) {
+                        isVisible = entries[0].isIntersecting;
+                        if (!isVisible && frameId !== null) {
+                            window.cancelAnimationFrame(frameId);
+                            frameId = null;
+                        }
+                        scheduleAutomaticMotion();
+                    }, { threshold: 0.15 }).observe(strip);
+                }
+
+                function handleStripResize() {
+                    updateStripChrome();
+                    scheduleAutomaticMotion();
+                }
+
+                strip.addEventListener('storyorientationchange', handleStripResize);
+
+                if ('ResizeObserver' in window)
+                    new ResizeObserver(handleStripResize).observe(strip);
+                else
+                    $window.on('resize', handleStripResize);
+
+                updateStripChrome();
+                if (autoScrolling) {
+                    document.addEventListener('visibilitychange', handleVisibilityChange);
+                    scheduleAutomaticMotion();
+                }
+            });
+        }
+
+        initializeStoryStripMotion();
 
         function cleanExifText(value) {
             return String(value == null ? '' : value)
