@@ -8,14 +8,20 @@
 {% endif %}
 <style>
 body { margin: 0; }
-.is-iframe .hide-in-iframe { display: none; }
+html.is-iframe #header nav > ul > li.hide-in-iframe { display: none; }
 </style>
 <script>
-try {
-    if (window.self !== window.top) {
-        document.documentElement.className += ' is-iframe';
+(function () {
+    var isEmbedded = false;
+
+    try {
+        isEmbedded = window.self !== window.top;
+    } catch (error) {
+        isEmbedded = true;
     }
-} catch (e) {
-    document.documentElement.className += ' is-iframe';
-}
+
+    if (isEmbedded) {
+        document.documentElement.classList.add('is-iframe');
+    }
+})();
 </script>
