@@ -68,7 +68,40 @@
 
         // Panels.
         var $panels = $('.panel'),
-            lockedScrollY = 0;
+            lockedScrollY = 0,
+            panelMemoryKey = 'photography:open-panel';
+
+        function rememberPanel($panel) {
+            if (!$panel.length)
+                return;
+
+            try {
+                window.sessionStorage.setItem(panelMemoryKey, $panel.attr('id'));
+            }
+            catch (error) {
+                // Private browsing can make storage unavailable.
+            }
+        }
+
+        function restorePanel() {
+            var panelId = null,
+                panel;
+
+            try {
+                panelId = window.sessionStorage.getItem(panelMemoryKey);
+                window.sessionStorage.removeItem(panelMemoryKey);
+            }
+            catch (error) {
+                // The language still changes when storage is unavailable.
+            }
+
+            if (!panelId)
+                return;
+
+            panel = document.getElementById(panelId);
+            if (panel && $(panel).hasClass('panel'))
+                $(panel).trigger('---show');
+        }
 
         function lockPageScroll() {
             if ($html.hasClass('content-active'))
@@ -156,11 +189,21 @@
 
         });
 
+        restorePanel();
+
         // Global events.
         $body
             .on('click', function (event) {
 
                 if ($body.hasClass('content-active')) {
+
+                    /* The language switch reloads the whole document because
+                       the panels' words and data are locale-specific. Let its
+                       link navigate, then reopen this panel in the new page. */
+                    if ($(event.target).closest('[data-locale-switch]').length) {
+                        rememberPanel($panels.filter('.active').first());
+                        return;
+                    }
 
                     event.preventDefault();
                     event.stopPropagation();
@@ -881,10 +924,11 @@
         }
 
         // Everything that has to run again when soft navigation swaps #main.
-        function activateContent() {
+        function activateContent(options) {
             $window.scrollTop(0);
             $main.scrollTop(0);
-            shuffleThumbs();
+            if (!options || !options.preservePhotoOrder)
+                shuffleThumbs();
             prepareThumbs();
             prepareStoryVideos();
             prepareLightboxes();

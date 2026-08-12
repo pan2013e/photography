@@ -113,6 +113,7 @@ js:
   regions_count: "{lit}/{total} {noun}"
   regions_of: "{place}的省级行政区"
   region_canvas: "{place}地图，有照片的地区会高亮显示。"
+  region_inset_canvas: 右下角插图放大珠江三角洲。
   all_from: "{place}的全部 {count} 张照片"
   region_hud: 亮起的地区设有相册
   region_hud_note: 国界与地球仪上所绘一致；限于版面，南海诸岛未予绘出。

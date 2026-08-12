@@ -22,13 +22,15 @@ window.Postcards = (function () {
     return values ? text.format(template, values) : template;
   }
 
-  const source = document.documentElement.getAttribute('data-postcards-url');
+  let source = document.documentElement.getAttribute('data-postcards-url');
   let cards = null;
   let loading = null;
+  let dataLoadVersion = 0;
   const popups = [];
 
   function load() {
     if (loading || !source) return loading;
+    const version = dataLoadVersion;
 
     loading = fetch(source)
       .then(response => {
@@ -36,6 +38,7 @@ window.Postcards = (function () {
         return response.json();
       })
       .then(data => {
+        if (version !== dataLoadVersion) return;
         cards = data;
         /* Data can land after a popup has already opened. */
         popups.forEach(entry => {
@@ -43,11 +46,21 @@ window.Postcards = (function () {
         });
       })
       .catch(error => {
+        if (version !== dataLoadVersion) return;
         cards = {};
         console.error(error);
       });
 
     return loading;
+  }
+
+  function setLocale(nextSource) {
+    if (!nextSource || nextSource === source) return;
+
+    source = nextSource;
+    cards = null;
+    loading = null;
+    dataLoadVersion += 1;
   }
 
   function entryFor(popup) {
@@ -293,5 +306,5 @@ window.Postcards = (function () {
     entry.face.appendChild(build(card, entry.image));
   }
 
-  return { attach, prime: load, show, reset, toggle };
+  return { attach, prime: load, setLocale, show, reset, toggle };
 })();

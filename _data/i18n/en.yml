@@ -123,6 +123,7 @@ js:
   regions_count: "{lit} OF {total} {noun}"
   regions_of: Regions of {place}
   region_canvas: "Map of {place}. Regions with photographs are highlighted."
+  region_inset_canvas: The inset enlarges the Pearl River Delta.
   all_from: All {count} photographs from {place}
   region_hud: Lit regions have galleries
   region_hud_note: >-

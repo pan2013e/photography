@@ -178,22 +178,36 @@
   });
 
   let dataLoadStarted = false;
+  let dataLoadVersion = 0;
 
   function loadAirportData() {
     if (dataLoadStarted) return;
     dataLoadStarted = true;
+    const version = dataLoadVersion;
 
     fetch(explorer.dataset.atlasUrl)
       .then(response => {
         if (!response.ok) throw new Error('Could not load airport galleries.');
         return response.json();
       })
-      .then(atlas => prepareAirports(atlas.airports || []))
+      .then(atlas => {
+        if (version === dataLoadVersion) prepareAirports(atlas.airports || []);
+      })
       .catch(error => {
+        if (version !== dataLoadVersion) return;
         empty.hidden = false;
         empty.textContent = say('airport_error');
         console.error(error);
       });
+  }
+
+  function setLocale(atlasUrl) {
+    explorer.dataset.atlasUrl = atlasUrl;
+    dataLoadVersion += 1;
+
+    if (!dataLoadStarted) return;
+    dataLoadStarted = false;
+    loadAirportData();
   }
 
   function loadAirportDataWhenVisible() {
@@ -206,6 +220,8 @@
       attributeFilter: ['class']
     });
   }
+
+  window.AirportExplorer = { setLocale };
 
   loadAirportDataWhenVisible();
 })();

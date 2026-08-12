@@ -93,16 +93,11 @@ is a page that exists.
         document.documentElement.classList.add('is-iframe');
     }
 
-    document.documentElement.setAttribute(
-        'data-postcards-url',
-        '{{ '/assets/' | append: locale_meta.asset_dir | append: 'postcards.json' | relative_url }}'
-    );
-    document.documentElement.setAttribute('data-baseurl', '{{ site.baseurl }}/');
-    document.documentElement.setAttribute('data-locale', '{{ locale }}');
-
     /* Everything the scripts have to say, already in this page's language.
        Placeholders in braces are filled in by SiteText.format. */
-    window.SiteText = {{ t.js | jsonify }};
+    window.SiteText = JSON.parse(
+        document.documentElement.getAttribute('data-site-text') || '{}'
+    );
     window.SiteText.format = function (template, values) {
         return String(template || '').replace(/\{(\w+)\}/g, function (whole, name) {
             return Object.prototype.hasOwnProperty.call(values || {}, name)

@@ -80,6 +80,9 @@
     mapStretch: 1,
     mapOriginX: 0,
     mapOriginY: 0,
+    insetFeaturePaths: [],
+    insetMarkers: [],
+    insetRect: null,
     pointerId: null,
     pointerStartX: 0,
     pointerStartY: 0,
@@ -105,6 +108,20 @@
     'Swaziland': 'Eswatini',
     'United Republic of Tanzania': 'Tanzania',
     'United States of America': 'United States'
+  };
+
+  /* Hong Kong and Macao are legible in the source geometry but only a few
+     pixels wide when all of China is fitted into the stage. The inset is a
+     geographic viewport, not a second list of places: whatever regions the
+     photographs and geometry provide inside these bounds are drawn. */
+  const pearlRiverDeltaInset = {
+    parent: 'cn',
+    bounds: {
+      minLon: 113.25,
+      maxLon: 114.55,
+      minLat: 21.95,
+      maxLat: 22.75
+    }
   };
 
   try {
@@ -194,11 +211,12 @@
 
   /* -- projection --------------------------------------------------------- */
 
-  function project(lon, lat) {
+  function project(lon, lat, mapProjection) {
     if (isMap()) {
+      const projection = mapProjection || state;
       return {
-        x: state.mapOriginX + lon * state.mapStretch * state.mapScale,
-        y: state.mapOriginY - lat * state.mapScale,
+        x: projection.mapOriginX + lon * projection.mapStretch * projection.mapScale,
+        y: projection.mapOriginY - lat * projection.mapScale,
         z: 1,
         visible: true
       };
@@ -241,27 +259,56 @@
     return bounds;
   }
 
+  function measureFeatureBounds(feature) {
+    const bounds = { minLon: 180, maxLon: -180, minLat: 90, maxLat: -90 };
+
+    ringsForGeometry(feature.geometry).forEach(ring => {
+      ring.forEach(point => {
+        bounds.minLon = Math.min(bounds.minLon, point[0]);
+        bounds.maxLon = Math.max(bounds.maxLon, point[0]);
+        bounds.minLat = Math.min(bounds.minLat, point[1]);
+        bounds.maxLat = Math.max(bounds.maxLat, point[1]);
+      });
+    });
+
+    return bounds;
+  }
+
+  function projectionForBounds(bounds, frame, inset) {
+    const midLon = (bounds.minLon + bounds.maxLon) / 2;
+    const midLat = (bounds.minLat + bounds.maxLat) / 2;
+    const mapStretch = Math.cos(midLat * degrees);
+    const spanX = (bounds.maxLon - bounds.minLon) * mapStretch;
+    const spanY = bounds.maxLat - bounds.minLat;
+    const mapScale = Math.min(
+      (frame.width * inset) / spanX,
+      (frame.height * inset) / spanY
+    );
+
+    return {
+      mapScale,
+      mapStretch,
+      mapOriginX: frame.x + frame.width / 2 - midLon * mapStretch * mapScale,
+      mapOriginY: frame.y + frame.height / 2 + midLat * mapScale
+    };
+  }
+
   function fitMap() {
     if (!state.bounds) return;
 
     const bounds = state.bounds;
-    const midLon = (bounds.minLon + bounds.maxLon) / 2;
-    const midLat = (bounds.minLat + bounds.maxLat) / 2;
-
-    /* Longitudes converge towards the poles, so squeeze them by the cosine of
-       the middle latitude to keep the country's shape recognisable. */
-    state.mapStretch = Math.cos(midLat * degrees);
-
-    const spanX = (bounds.maxLon - bounds.minLon) * state.mapStretch;
-    const spanY = bounds.maxLat - bounds.minLat;
-    const inset = 0.9;
-
-    state.mapScale = Math.min(
-      (state.width * inset) / spanX,
-      (state.height * inset) / spanY
+    /* Longitudes converge towards the poles, so the projection squeezes them
+       by the middle latitude to keep the country's shape recognisable. */
+    const projection = projectionForBounds(
+      bounds,
+      { x: 0, y: 0, width: state.width, height: state.height },
+      0.9
     );
-    state.mapOriginX = state.width / 2 - midLon * state.mapStretch * state.mapScale;
-    state.mapOriginY = state.height / 2 + midLat * state.mapScale;
+
+    state.mapScale = projection.mapScale;
+    state.mapStretch = projection.mapStretch;
+    state.mapOriginX = projection.mapOriginX;
+    state.mapOriginY = projection.mapOriginY;
   }
 
   /* -- drawing ------------------------------------------------------------ */
@@ -286,12 +333,12 @@
     state.needsDraw = true;
   }
 
-  function drawProjectedLine(points) {
+  function drawProjectedLine(points, mapProjection) {
     let drawing = false;
     context.beginPath();
 
     points.forEach(point => {
-      const projected = project(point[0], point[1]);
+      const projected = project(point[0], point[1], mapProjection);
       if (!projected.visible) {
         drawing = false;
         return;
@@ -358,7 +405,7 @@
     return [];
   }
 
-  function createFeaturePath(feature) {
+  function createFeaturePath(feature, mapProjection) {
     const path = new Path2D();
     let hasVisiblePoint = false;
 
@@ -367,7 +414,7 @@
       let visibleInRing = false;
 
       ring.forEach(coordinate => {
-        const projected = project(coordinate[0], coordinate[1]);
+        const projected = project(coordinate[0], coordinate[1], mapProjection);
         if (!projected.visible) {
           drawing = false;
           return;
@@ -431,31 +478,22 @@
     }
   }
 
-  function drawPlaces() {
-    state.featurePaths = [];
+  function featurePathsFor(features, mapProjection) {
+    return features.reduce((paths, feature) => {
+      const path = createFeaturePath(feature, mapProjection);
+      if (!path) return paths;
 
-    if (!state.geojson) {
-      context.fillStyle = 'rgba(236, 226, 201, 0.15)';
-      context.font = '12px sans-serif';
-      context.textAlign = 'center';
-      context.fillText(say('drawing'), state.centerX, state.centerY);
-      return;
-    }
-
-    state.geojson.features.forEach(feature => {
-      const path = createFeaturePath(feature);
-      if (!path) return;
-
-      state.featurePaths.push({
+      paths.push({
         feature,
         path,
         place: placeForFeature(feature)
       });
-    });
+      return paths;
+    }, []);
+  }
 
-    if (!isMap()) syncMeridianFeature(findFeatureOnMeridian());
-
-    state.featurePaths.forEach(item => {
+  function paintFeaturePaths(paths) {
+    paths.forEach(item => {
       const reachable = isReachable(item.place);
       const isHovered = state.hoveredFeature === item.feature;
       const isOnMeridian = !isMap() && state.meridianFeature === item.feature;
@@ -479,6 +517,23 @@
       context.stroke(item.path);
       context.restore();
     });
+  }
+
+  function drawPlaces() {
+    state.featurePaths = [];
+
+    if (!state.geojson) {
+      context.fillStyle = 'rgba(236, 226, 201, 0.15)';
+      context.font = '12px sans-serif';
+      context.textAlign = 'center';
+      context.fillText(say('drawing'), state.centerX, state.centerY);
+      return;
+    }
+
+    state.featurePaths = featurePathsFor(state.geojson.features);
+
+    if (!isMap()) syncMeridianFeature(findFeatureOnMeridian());
+    paintFeaturePaths(state.featurePaths);
   }
 
   function drawDestinationMarkers() {
@@ -516,6 +571,181 @@
         hitRadius: Math.max(10, radius + 5)
       });
     });
+  }
+
+  function roundedRectanglePath(rect, radius) {
+    const path = new Path2D();
+    const right = rect.x + rect.width;
+    const bottom = rect.y + rect.height;
+
+    path.moveTo(rect.x + radius, rect.y);
+    path.lineTo(right - radius, rect.y);
+    path.quadraticCurveTo(right, rect.y, right, rect.y + radius);
+    path.lineTo(right, bottom - radius);
+    path.quadraticCurveTo(right, bottom, right - radius, bottom);
+    path.lineTo(rect.x + radius, bottom);
+    path.quadraticCurveTo(rect.x, bottom, rect.x, bottom - radius);
+    path.lineTo(rect.x, rect.y + radius);
+    path.quadraticCurveTo(rect.x, rect.y, rect.x + radius, rect.y);
+    path.closePath();
+    return path;
+  }
+
+  function insetForCurrentMap() {
+    if (!isMap() || !state.parent || state.parent.code !== pearlRiverDeltaInset.parent) {
+      return null;
+    }
+
+    const compact = state.width < 520 || state.height < 340;
+    const width = Math.min(
+      compact ? 128 : 180,
+      Math.max(96, state.width * (compact ? 0.3 : 0.24))
+    );
+    const height = width * (compact ? 0.68 : 0.66);
+    const margin = compact ? 5 : 8;
+    const rect = {
+      x: state.width - width - margin,
+      y: state.height - height - margin,
+      width,
+      height
+    };
+    const mapRect = {
+      x: rect.x + 7,
+      y: rect.y + 7,
+      width: rect.width - 14,
+      height: rect.height - 14
+    };
+
+    return {
+      bounds: pearlRiverDeltaInset.bounds,
+      compact,
+      mapRect,
+      projection: projectionForBounds(pearlRiverDeltaInset.bounds, mapRect, 0.9),
+      rect
+    };
+  }
+
+  function boundsOverlap(first, second) {
+    return first.maxLon >= second.minLon && first.minLon <= second.maxLon &&
+      first.maxLat >= second.minLat && first.minLat <= second.maxLat;
+  }
+
+  function drawInsetGrid(inset) {
+    const bounds = inset.bounds;
+
+    context.save();
+    context.strokeStyle = 'rgba(199, 220, 218, 0.08)';
+    context.lineWidth = 0.55;
+
+    for (let lat = Math.ceil(bounds.minLat); lat <= bounds.maxLat; lat += 1) {
+      drawProjectedLine([[bounds.minLon, lat], [bounds.maxLon, lat]], inset.projection);
+    }
+    for (let lon = Math.ceil(bounds.minLon); lon <= bounds.maxLon; lon += 1) {
+      drawProjectedLine([[lon, bounds.minLat], [lon, bounds.maxLat]], inset.projection);
+    }
+
+    context.restore();
+  }
+
+  /* The shapes are enlarged by the inset, but the two smallest administrative
+     areas still deserve generous pointer targets. Their labels and centres
+     come from the generated place data, so a future gallery changes their
+     colour and behaviour without another exception here. */
+  function drawInsetMarkers(inset) {
+    state.insetMarkers = [];
+
+    state.insetFeaturePaths.forEach(item => {
+      const bounds = measureFeatureBounds(item.feature);
+      const span = Math.max(bounds.maxLon - bounds.minLon, bounds.maxLat - bounds.minLat);
+      if (!item.place || span > 0.8) return;
+
+      const projected = project(item.place.lon, item.place.lat, inset.projection);
+      const reachable = isReachable(item.place);
+      const isActive = state.hoveredFeature === item.feature;
+      const radius = inset.compact ? 3.2 : 3.8;
+      const code = item.place.iso ? item.place.iso.split('-').pop() : '';
+      const labelOnLeft = projected.x < inset.mapRect.x + inset.mapRect.width / 2;
+
+      context.save();
+      context.shadowColor = reachable ? palette.active : 'rgba(169, 193, 188, 0.3)';
+      context.shadowBlur = isActive ? 10 : 4;
+      context.fillStyle = reachable
+        ? (isActive ? '#d9fff7' : palette.activeBright)
+        : (isActive ? 'rgba(222, 239, 235, 0.88)' : 'rgba(31, 45, 47, 0.92)');
+      context.strokeStyle = reachable ? palette.activeLineHighlight : palette.idleLineHighlight;
+      context.lineWidth = 1.15;
+      context.beginPath();
+      context.arc(projected.x, projected.y, radius, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+
+      if (code) {
+        context.fillStyle = isActive ? '#ffffff' : 'rgba(222, 239, 235, 0.76)';
+        context.font = (inset.compact ? '600 8px' : '600 9px') + ' sans-serif';
+        context.textAlign = labelOnLeft ? 'right' : 'left';
+        context.textBaseline = 'middle';
+        context.fillText(code, projected.x + (labelOnLeft ? -7 : 7), projected.y);
+      }
+      context.restore();
+
+      state.insetMarkers.push({
+        feature: item.feature,
+        x: projected.x,
+        y: projected.y,
+        hitRadius: inset.compact ? 13 : 15
+      });
+    });
+  }
+
+  function drawMapInset() {
+    const inset = insetForCurrentMap();
+
+    state.insetFeaturePaths = [];
+    state.insetMarkers = [];
+    state.insetRect = inset ? inset.rect : null;
+    if (!inset || !state.geojson) return;
+
+    const card = roundedRectanglePath(inset.rect, inset.compact ? 7 : 9);
+    const mapWindow = roundedRectanglePath(inset.mapRect, inset.compact ? 4 : 5);
+    const features = state.geojson.features.filter(feature => {
+      return boundsOverlap(measureFeatureBounds(feature), inset.bounds);
+    });
+
+    context.save();
+    context.shadowColor = 'rgba(0, 0, 0, 0.42)';
+    context.shadowBlur = inset.compact ? 14 : 24;
+    context.shadowOffsetY = inset.compact ? 5 : 9;
+    context.fillStyle = 'rgba(10, 17, 19, 0.92)';
+    context.fill(card);
+    context.restore();
+
+    context.save();
+    context.clip(mapWindow);
+    const sea = context.createLinearGradient(
+      inset.mapRect.x,
+      inset.mapRect.y,
+      inset.mapRect.x,
+      inset.mapRect.y + inset.mapRect.height
+    );
+    sea.addColorStop(0, 'rgba(27, 48, 51, 0.98)');
+    sea.addColorStop(1, 'rgba(13, 28, 31, 0.98)');
+    context.fillStyle = sea;
+    context.fillRect(inset.mapRect.x, inset.mapRect.y, inset.mapRect.width, inset.mapRect.height);
+    drawInsetGrid(inset);
+    state.insetFeaturePaths = featurePathsFor(features, inset.projection);
+    paintFeaturePaths(state.insetFeaturePaths);
+    drawInsetMarkers(inset);
+    context.restore();
+
+    context.save();
+    context.strokeStyle = state.hoveredFeature && state.insetFeaturePaths.some(item => {
+      return item.feature === state.hoveredFeature;
+    })
+      ? 'rgba(111, 214, 193, 0.68)'
+      : 'rgba(208, 231, 226, 0.25)';
+    context.lineWidth = 0.8;
+    context.stroke(card);
+    context.restore();
   }
 
   function drawVirtualMeridian() {
@@ -626,7 +856,9 @@
   function parentFeatures() {
     if (!state.worldGeojson || !state.parent) return [];
 
-    const wanted = new Set([normalizedName(state.parent.name)]);
+    /* World geometry is labelled in English, while the parent's displayed
+       name follows the locale. `match` is the shared, locale-free key. */
+    const wanted = new Set([normalizedName(state.parent.match || state.parent.name)]);
     state.places.forEach(place => wanted.add(normalizedName(place.name)));
 
     return state.worldGeojson.features.filter(feature => {
@@ -730,6 +962,7 @@
     }
 
     drawDestinationMarkers();
+    drawMapInset();
   }
 
   function drawScene() {
@@ -738,7 +971,12 @@
     context.clearRect(0, 0, state.width, state.height);
 
     if (isMap()) drawMapView();
-    else drawGlobeView();
+    else {
+      state.insetFeaturePaths = [];
+      state.insetMarkers = [];
+      state.insetRect = null;
+      drawGlobeView();
+    }
 
     state.needsDraw = false;
   }
@@ -751,6 +989,34 @@
 
   function hitTest(x, y) {
     if (!isMap() && Math.hypot(x - state.centerX, y - state.centerY) > state.radius) return null;
+
+    if (
+      isMap() &&
+      state.insetRect &&
+      x >= state.insetRect.x &&
+      x <= state.insetRect.x + state.insetRect.width &&
+      y >= state.insetRect.y &&
+      y <= state.insetRect.y + state.insetRect.height
+    ) {
+      for (let index = state.insetMarkers.length - 1; index >= 0; index -= 1) {
+        const marker = state.insetMarkers[index];
+        if (Math.hypot(x - marker.x, y - marker.y) <= marker.hitRadius) return marker.feature;
+      }
+
+      context.save();
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      for (let index = state.insetFeaturePaths.length - 1; index >= 0; index -= 1) {
+        const item = state.insetFeaturePaths[index];
+        if (context.isPointInPath(item.path, x, y)) {
+          context.restore();
+          return item.feature;
+        }
+      }
+      context.restore();
+      /* The card covers the main map; a click on its sea must not fall through
+         to a province hidden beneath it. */
+      return null;
+    }
 
     for (let index = state.destinationMarkers.length - 1; index >= 0; index -= 1) {
       const marker = state.destinationMarkers[index];
@@ -956,7 +1222,11 @@
       pickerLabel.textContent = say('region_picker');
       placeSearch.placeholder = options.search || say('region_search');
       placeList.setAttribute('aria-label', say('regions_of', { place: state.parent.name }));
-      canvas.setAttribute('aria-label', say('region_canvas', { place: state.parent.name }));
+      canvas.setAttribute(
+        'aria-label',
+        say('region_canvas', { place: state.parent.name }) +
+          (insetForCurrentMap() ? ' ' + say('region_inset_canvas') : '')
+      );
       showParentLink(
         photoCount(state.parent) > 0,
         state.parent.code,
@@ -1261,15 +1531,18 @@
   }
 
   let dataLoadStarted = false;
+  let dataLoadVersion = 0;
 
   function loadWorldData() {
     if (dataLoadStarted) return;
     dataLoadStarted = true;
+    const version = dataLoadVersion;
 
     Promise.all([
       fetchJson(explorer.dataset.geoUrl, say('country_geometry_error')),
       fetchJson(explorer.dataset.atlasUrl, say('destinations_error'))
     ]).then(([geojson, atlas]) => {
+      if (version !== dataLoadVersion) return;
       state.geojson = geojson;
       state.places = atlas.countries;
       state.subdivisions = atlas.subdivisions || {};
@@ -1278,6 +1551,55 @@
       state.worldPlaces = atlas.countries;
       applyView();
     }).catch(error => {
+      if (version !== dataLoadVersion) return;
+      selection.querySelector('strong').textContent = say('globe_unavailable');
+      selection.querySelector('small').textContent = say('refresh');
+      console.error(error);
+    });
+  }
+
+  function setLocale(atlasUrl) {
+    explorer.dataset.atlasUrl = atlasUrl;
+    dataLoadVersion += 1;
+
+    if (!dataLoadStarted) return;
+    if (!state.worldGeojson) {
+      dataLoadStarted = false;
+      loadWorldData();
+      return;
+    }
+
+    const version = dataLoadVersion;
+    fetchJson(atlasUrl, say('destinations_error')).then(atlas => {
+      if (version !== dataLoadVersion) return;
+
+      const parentCode = isMap() && state.parent ? state.parent.code : null;
+      state.subdivisions = atlas.subdivisions || {};
+      state.names = atlas.names || {};
+      state.worldPlaces = atlas.countries;
+
+      if (parentCode) {
+        const parent = atlas.countries.find(place => place.code === parentCode);
+        const options = parent && state.subdivisions[parent.subdivisions];
+        if (parent && options) {
+          state.parent = parent;
+          state.options = options;
+          state.places = options.places;
+        } else {
+          state.view = 'globe';
+          state.parent = null;
+          state.options = null;
+          state.geojson = state.worldGeojson;
+          state.places = state.worldPlaces;
+          state.bounds = null;
+        }
+      } else {
+        state.places = state.worldPlaces;
+      }
+
+      applyView();
+    }).catch(error => {
+      if (version !== dataLoadVersion) return;
       selection.querySelector('strong').textContent = say('globe_unavailable');
       selection.querySelector('small').textContent = say('refresh');
       console.error(error);
@@ -1294,6 +1616,8 @@
       attributeFilter: ['class']
     });
   }
+
+  window.GlobeExplorer = { setLocale };
 
   loadWorldDataWhenVisible();
 

@@ -2,8 +2,15 @@
 {%- assign t = site.data.i18n[locale] -%}
 {%- assign locale_meta = site.locales | where: "code", locale | first -%}
 {%- capture atlas_url %}/assets/{{ locale_meta.asset_dir }}atlas.json{% endcapture -%}
+{%- capture postcards_url %}/assets/{{ locale_meta.asset_dir }}postcards.json{% endcapture -%}
 <!DOCTYPE HTML>
-<html lang="{{ locale_meta.lang }}">
+<html
+    lang="{{ locale_meta.lang }}"
+    data-baseurl="{{ site.baseurl }}/"
+    data-locale="{{ locale }}"
+    data-postcards-url="{{ postcards_url | relative_url }}"
+    data-site-text="{{ t.js | jsonify | escape }}"
+>
 <head>
     {% include header.html locale=locale t=t locale_meta=locale_meta %}
 </head>

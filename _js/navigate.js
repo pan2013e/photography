@@ -17,6 +17,10 @@ window.Navigation = (function () {
   const pages = new Map();
   let token = 0;
 
+  function currentLocale() {
+    return document.documentElement.getAttribute('data-locale') || '';
+  }
+
   function main() {
     return document.getElementById('main');
   }
@@ -52,6 +56,120 @@ window.Navigation = (function () {
     });
   }
 
+  function copyAttribute(current, incoming, name) {
+    if (incoming.hasAttribute(name)) {
+      current.setAttribute(name, incoming.getAttribute(name));
+    } else {
+      current.removeAttribute(name);
+    }
+  }
+
+  function syncHeader(parsed) {
+    const currentLinks = document.querySelectorAll('#header nav a');
+    const incomingLinks = parsed.querySelectorAll('#header nav a');
+
+    currentLinks.forEach((link, index) => {
+      const incoming = incomingLinks[index];
+      if (!incoming) return;
+
+      ['href', 'aria-label', 'title', 'hreflang', 'data-locale-switch'].forEach(name => {
+        copyAttribute(link, incoming, name);
+      });
+      link.innerHTML = incoming.innerHTML;
+    });
+  }
+
+  function syncContents(parsed, selectors) {
+    selectors.forEach(selector => {
+      const current = document.querySelector(selector);
+      const incoming = parsed.querySelector(selector);
+      if (current && incoming) current.innerHTML = incoming.innerHTML;
+    });
+  }
+
+  function syncAttribute(parsed, selector, name) {
+    const current = document.querySelector(selector);
+    const incoming = parsed.querySelector(selector);
+    if (current && incoming) copyAttribute(current, incoming, name);
+  }
+
+  function syncSiteText(parsed) {
+    const encoded = parsed.documentElement.getAttribute('data-site-text') || '{}';
+    const incoming = JSON.parse(encoded);
+    const text = window.SiteText || {};
+    const format = text.format;
+
+    Object.keys(text).forEach(key => delete text[key]);
+    Object.assign(text, incoming);
+    if (format) text.format = format;
+    window.SiteText = text;
+  }
+
+  /* The header and explorers live outside #main, so a locale change has to
+     translate them in place. Their elements stay put: main.js and the two
+     explorers keep event handlers and canvas state attached to those nodes. */
+  function syncLocaleShell(parsed) {
+    ['lang', 'data-locale', 'data-postcards-url', 'data-site-text'].forEach(name => {
+      copyAttribute(document.documentElement, parsed.documentElement, name);
+    });
+    copyAttribute(document.body, parsed.body, 'data-print-notice');
+    syncSiteText(parsed);
+    syncHeader(parsed);
+
+    ['#world-map', '#airport-selector'].forEach(selector => {
+      syncAttribute(parsed, selector, 'aria-label');
+    });
+    ['.globe-explorer', '.airport-explorer'].forEach(selector => {
+      syncAttribute(parsed, selector, 'data-atlas-url');
+    });
+    syncAttribute(parsed, '.globe-explorer', 'data-geo-url');
+    syncAttribute(parsed, '.globe-explorer', 'data-subdivision-geo');
+
+    [
+      '#globe-destination-count',
+      '#globe-title',
+      '#globe-back',
+      '.globe-hud span',
+      '#globe-selection',
+      '#globe-reset',
+      '#country-picker-label',
+      '#airport-count',
+      '.airport-heading h2',
+      '.airport-search .sr-only',
+      '#airport-empty'
+    ].forEach(selector => syncContents(parsed, [selector]));
+
+    [
+      ['#country-globe', 'aria-label'],
+      ['#globe-reset', 'aria-label'],
+      ['#country-search', 'placeholder'],
+      ['#country-list', 'aria-label'],
+      ['#airport-search', 'placeholder'],
+      ['#airport-list', 'aria-label']
+    ].forEach(item => syncAttribute(parsed, item[0], item[1]));
+  }
+
+  function preservePhotoOrder(incoming) {
+    const currentNames = Array.from(main().querySelectorAll(':scope > .thumb img[data-name]'))
+      .map(image => image.dataset.name);
+    if (currentNames.length < 2) return;
+
+    const incomingThumbs = new Map();
+    Array.from(incoming.querySelectorAll(':scope > .thumb')).forEach(thumb => {
+      const image = thumb.querySelector('img[data-name]');
+      if (image) incomingThumbs.set(image.dataset.name, thumb);
+    });
+
+    /* A locale pair contains the same photographs. Only reorder when that is
+       still true, so a changed build cannot hide a newly added photograph. */
+    if (
+      incomingThumbs.size !== currentNames.length ||
+      currentNames.some(name => !incomingThumbs.has(name))
+    ) return;
+
+    currentNames.forEach(name => incoming.appendChild(incomingThumbs.get(name)));
+  }
+
   function swap(html, url, push) {
     const parsed = new DOMParser().parseFromString(html, 'text/html');
     const incoming = parsed.getElementById('main');
@@ -62,8 +180,46 @@ window.Navigation = (function () {
     document.title = parsed.title;
     retarget(parsed);
 
-    if (push) window.history.pushState({ soft: true }, '', url.href);
+    if (push) {
+      window.history.pushState({ soft: true, locale: currentLocale() }, '', url.href);
+    }
     if (window.SiteContent) window.SiteContent.activate();
+  }
+
+  function swapLocale(html, url, push) {
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+    const incoming = parsed.getElementById('main');
+    if (!incoming) throw new Error('The page has no #main.');
+
+    const runtimeBodyClasses = ['content-active', 'ie', 'touch'].filter(name => {
+      return document.body.classList.contains(name);
+    });
+
+    preservePhotoOrder(incoming);
+    main().innerHTML = incoming.innerHTML;
+    document.body.className = parsed.body.className;
+    runtimeBodyClasses.forEach(name => document.body.classList.add(name));
+    document.title = parsed.title;
+    syncLocaleShell(parsed);
+    retarget(parsed);
+
+    const atlasUrl = document.querySelector('.globe-explorer').dataset.atlasUrl;
+    if (window.Postcards && window.Postcards.setLocale) {
+      window.Postcards.setLocale(
+        document.documentElement.getAttribute('data-postcards-url')
+      );
+    }
+    if (window.GlobeExplorer && window.GlobeExplorer.setLocale) {
+      window.GlobeExplorer.setLocale(atlasUrl);
+    }
+    if (window.AirportExplorer && window.AirportExplorer.setLocale) {
+      window.AirportExplorer.setLocale(atlasUrl);
+    }
+
+    if (push) {
+      window.history.pushState({ soft: true, locale: currentLocale() }, '', url.href);
+    }
+    if (window.SiteContent) window.SiteContent.activate({ preservePhotoOrder: true });
   }
 
   function render(html, url, push) {
@@ -73,6 +229,15 @@ window.Navigation = (function () {
     }
 
     document.startViewTransition(() => swap(html, url, push));
+  }
+
+  function renderLocale(html, url, push) {
+    if (!document.startViewTransition) {
+      swapLocale(html, url, push);
+      return;
+    }
+
+    document.startViewTransition(() => swapLocale(html, url, push));
   }
 
   function fetchPage(href) {
@@ -112,6 +277,34 @@ window.Navigation = (function () {
     });
   }
 
+  function rememberPanelForReload() {
+    const panel = document.querySelector('.panel.active');
+    if (!panel) return;
+
+    try {
+      window.sessionStorage.setItem('photography:open-panel', panel.id);
+    } catch (error) {
+      /* Private browsing can make storage unavailable. */
+    }
+  }
+
+  function goLocale(href, push) {
+    const url = new URL(href, window.location.href);
+    const ticket = ++token;
+    document.documentElement.classList.add('is-navigating');
+
+    fetchPage(url.href).then(html => {
+      if (ticket !== token) return;
+      document.documentElement.classList.remove('is-navigating');
+      renderLocale(html, url, push !== false);
+    }).catch(error => {
+      pages.delete(url.href);
+      console.error(error);
+      rememberPanelForReload();
+      window.location.href = url.href;
+    });
+  }
+
   function onClick(event) {
     if (event.defaultPrevented || event.button !== 0) return;
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -122,11 +315,6 @@ window.Navigation = (function () {
     if (link.hasAttribute('download')) return;
     if (link.classList.contains('image')) return;
     if (link.closest('.poptrox-popup')) return;
-    /* Changing language changes the whole document -- the header, the panels,
-       the words the scripts speak -- and the ?lang= it carries has to be seen
-       by the script in <head>. So it gets an ordinary navigation. */
-    if (link.hasAttribute('data-locale-switch')) return;
-
     const href = link.getAttribute('href');
     if (!href || href.charAt(0) === '#' || /^[a-z]+:/i.test(href) && !/^https?:/i.test(href)) {
       return;
@@ -134,6 +322,22 @@ window.Navigation = (function () {
 
     const url = new URL(href, window.location.href);
     if (!isInternal(url) || !isDocument(url)) return;
+
+    if (link.hasAttribute('data-locale-switch')) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const locale = link.dataset.localeSwitch;
+      try {
+        window.localStorage.setItem('photography:locale', locale);
+      } catch (error) {
+        /* The in-page switch still works without remembered preferences. */
+      }
+
+      url.searchParams.delete('lang');
+      goLocale(url.href, true);
+      return;
+    }
 
     event.preventDefault();
     if (url.href === window.location.href) return;
@@ -144,10 +348,21 @@ window.Navigation = (function () {
   if (supported) {
     /* Capture: the panels stop clicks from reaching the document. */
     document.addEventListener('click', onClick, true);
-    window.addEventListener('popstate', () => go(window.location.href, false));
+    window.addEventListener('popstate', event => {
+      const locale = event.state && event.state.locale;
+      if (locale && locale !== currentLocale()) {
+        goLocale(window.location.href, false);
+      } else {
+        go(window.location.href, false);
+      }
+    });
     /* The page we started on is already loaded. */
-    window.history.replaceState({ soft: true }, '', window.location.href);
+    window.history.replaceState(
+      { soft: true, locale: currentLocale() },
+      '',
+      window.location.href
+    );
   }
 
-  return { go, supported };
+  return { go, goLocale, supported };
 })();
