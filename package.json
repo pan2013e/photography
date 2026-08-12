@@ -1,0 +1,30 @@
+{
+  "name": "photography",
+  "version": "5.0.0",
+  "description": "Photography by Zhiyuan Pan -- a Jekyll photo album",
+  "private": true,
+  "scripts": {
+    "build": "npm run css && npm run js",
+    "css": "sass _sass/main.scss assets/css/main.min.css --style=compressed --no-source-map --quiet",
+    "images": "node _tools/images.js",
+    "ingest": "node _tools/images.js --ingest",
+    "js": "node _tools/bundle.js",
+    "prepare": "git config core.hooksPath .githooks",
+    "watch": "sass --watch _sass/main.scss assets/css/main.min.css --style=compressed --no-source-map"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pan2013e/photography.git"
+  },
+  "keywords": [
+    "photography",
+    "jekyll",
+    "photo album"
+  ],
+  "author": "Zhiyuan Pan",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "sass": "^1.102.0",
+    "terser": "^5.49.2"
+  }
+}

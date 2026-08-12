@@ -1,0 +1,32 @@
+{% assign story = include.story %}
+{% assign locale = page.locale | default: site.default_locale %}
+{% assign t = site.data.i18n[locale] %}
+{% if story.date_label %}
+<time datetime="{{ story.date | date: '%Y-%m-%d' }}">{{ story.date_label }}</time>
+{% elsif story.dates and story.dates.size > 0 %}
+<span class="story-date-list">
+    {% for date_entry in story.dates %}
+        {% if date_entry.label %}
+            {% if date_entry.start %}
+            <time datetime="{{ date_entry.start | date: '%Y-%m-%d' }}">{{ date_entry.label }}</time>
+            {% else %}
+            <span>{{ date_entry.label }}</span>
+            {% endif %}
+        {% elsif date_entry.start %}
+            {% assign start_iso = date_entry.start | date: "%Y-%m-%d" %}
+            {% assign end_iso = date_entry.end | date: "%Y-%m-%d" %}
+            <time datetime="{{ start_iso }}">{{ date_entry.start | date: t.date.day_month_year }}</time>
+            {% if date_entry.end and end_iso != start_iso %}
+            <span class="story-date-range" aria-hidden="true">&ndash;</span>
+            <span class="sr-only">{{ t.story.through }}</span>
+            <time datetime="{{ end_iso }}">{{ date_entry.end | date: t.date.day_month_year }}</time>
+            {% endif %}
+        {% else %}
+            <span>{{ date_entry }}</span>
+        {% endif %}
+        {% unless forloop.last %}<span class="story-date-divider" aria-hidden="true">/</span>{% endunless %}
+    {% endfor %}
+</span>
+{% elsif story.date %}
+<time datetime="{{ story.date | date: '%Y-%m-%d' }}">{{ story.date | date: t.date.month_year }}</time>
+{% endif %}

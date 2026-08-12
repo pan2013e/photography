@@ -1,0 +1,49 @@
+url: "https://pan2013e.github.io"
+baseurl: "/photography"
+top_url: "https://pan2013e.github.io"
+image_fulls_loc: "/images/fulls"
+image_thumbs_loc: "/images/thumbs"
+image_small_loc: "/images/small"
+collections:
+  stories:
+    output: true
+    permalink: /story-:name
+defaults:
+  - scope:
+      path: ""
+      type: stories
+    values:
+      layout: story
+# The middle of the navigation bar. `icon` is a Font Awesome 4 name and `key`
+# names the label under `nav:` in _data/i18n/<locale>.yml, which becomes the
+# link's accessible name. A page path is prefixed with the locale; an anchor
+# such as "#world-map" is left alone.
+category:
+  - icon: book
+    key: stories
+    page: "/stories"
+  - icon: globe
+    key: globe
+    page: "#world-map"
+  - icon: plane
+    key: airports
+    page: "#airport-selector"
+  - icon: paw
+    key: wildlife
+    page: "/wildlife"
+
+title: "Photography by Zhiyuan Pan"
+subtitle: "See the world through my eyes!"
+author: "Zhiyuan Pan"
+header:
+  title: "Photography"
+  subtitle: ""
+# The line under a photograph in the lightbox, read from its EXIF in this
+# order. `icon` is optional and names a Font Awesome 4 icon.
+exif:
+  - tag: Model
+    icon: camera-retro
+  - tag: FocalLengthIn35mmFilm
+  - tag: FNumber
+  - tag: ExposureTime
+  - tag: ISOSpeedRatings

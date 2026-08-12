@@ -1,0 +1,72 @@
+{% assign strip = include.set %}
+{% assign locale = page.locale | default: site.default_locale %}
+{% assign t = site.data.i18n[locale] %}
+{% if strip and strip.photos %}
+<section class="story-photo-section"{% if strip.title %} aria-labelledby="photo-strip-{{ include.id }}"{% endif %}>
+    <header class="story-section-heading">
+        {% if strip.eyebrow %}<p class="story-eyebrow">{{ strip.eyebrow }}</p>{% endif %}
+        {% if strip.title %}<h2 id="photo-strip-{{ include.id }}">{{ strip.title }}</h2>{% endif %}
+        {% if strip.description %}<p>{{ strip.description }}</p>{% endif %}
+    </header>
+    <div class="story-strip-shell">
+        <div
+            class="story-photo-strip has-{{ strip.photos.size }}-photos{% if strip.ratio %} is-{{ strip.ratio }}{% endif %}"
+            role="list"
+            aria-label="{{ strip.title | default: t.story.series }}"
+            tabindex="0"
+        >
+            {% for photo in strip.photos %}
+                {% assign is_video = false %}
+                {% if photo.kind == "video" or photo.type == "video" or photo.video %}
+                    {% assign is_video = true %}
+                {% endif %}
+                <figure class="story-photo{% if is_video %} story-video-card{% endif %}{% if photo.ratio %} is-photo-{{ photo.ratio }} has-explicit-ratio{% endif %}" role="listitem">
+                    {% if is_video %}
+                        {% include story-video-player.html video=photo %}
+                    {% else %}
+                        {% if photo.file %}
+                            {% capture full_path %}{{ site.image_fulls_loc }}/{{ photo.file }}{% endcapture %}
+                            {% capture thumb_path %}{{ site.image_small_loc }}/{{ photo.file }}{% endcapture %}
+                            {% capture thumb_path_2x %}{{ site.image_thumbs_loc }}/{{ photo.file }}{% endcapture %}
+                            {% assign photo_key = photo.file %}
+                        {% else %}
+                            {% assign full_path = photo.src %}
+                            {% assign thumb_path = photo.thumb | default: photo.src %}
+                            {% assign thumb_path_2x = nil %}
+                            {% assign photo_key = photo.name | default: photo.src %}
+                        {% endif %}
+                        {% assign postcard = false %}
+                        {% if site.data.postcard_photos contains photo_key %}{% assign postcard = true %}{% endif %}
+                        <a href="{{ full_path | relative_url }}" class="image">
+                            <img
+                                data-src="{{ thumb_path | relative_url }}"
+                                {% if thumb_path_2x %}data-src-2x="{{ thumb_path_2x | relative_url }}"{% endif %}
+                                data-name="{{ photo_key | escape }}"
+                                {% if photo.position %}data-position="{{ photo.position }}"{% endif %}
+                                {% if postcard %}data-postcard="true"{% endif %}
+                                alt="{{ photo.alt | default: strip.title | escape }}"
+                                loading="lazy"
+                                decoding="async"
+                            >
+                        </a>
+                        {% if postcard %}<span class="thumb-postcard-flag" aria-label="{{ t.gallery.postcard_flag }}"><i class="fa fa-envelope-o" aria-hidden="true"></i></span>{% endif %}
+                    {% endif %}
+                    {% if photo.caption or photo.credit %}
+                    <figcaption>
+                        {% if photo.caption %}<span>{{ photo.caption }}</span>{% endif %}
+                        {% if photo.credit %}<small>{{ photo.credit }}</small>{% endif %}
+                    </figcaption>
+                    {% endif %}
+                </figure>
+            {% endfor %}
+        </div>
+        <div class="story-strip-progress" aria-hidden="true"><span></span></div>
+        <button class="story-strip-step is-previous" type="button" aria-label="{{ t.story.scroll_back }}">
+            <i class="fa fa-angle-left" aria-hidden="true"></i>
+        </button>
+        <button class="story-strip-step is-next" type="button" aria-label="{{ t.story.scroll_on }}">
+            <i class="fa fa-angle-right" aria-hidden="true"></i>
+        </button>
+    </div>
+</section>
+{% endif %}

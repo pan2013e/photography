@@ -1,0 +1,144 @@
+# 界面文本，简体中文。
+#
+# 键名必须与 _data/i18n/en.yml 完全一致；缺少的键会回退到英文，
+# 所以未译完的文件也能正常渲染，只是那几处仍是英文。
+#
+# 语气：与英文版一致，克制、平实的书面语。功能性的标签（搜索、错误提示、
+# 无障碍标签）用规范说法，不用口语；只有正文一类的句子可以松一点。
+#
+# `js` 是唯一送进浏览器的部分：_includes/header.html 把它写成
+# window.SiteText，脚本从那里读取。花括号是脚本填入的占位符。
+
+label: 简体中文
+short: 中文
+
+site:
+  title: 潘致远的相册
+  description: 用我的眼睛看世界。
+
+date:
+  month_year: "%Y年%-m月"
+  day_month_year: "%Y年%-m月%-d日"
+  postcard: "%Y年%-m月%-d日"
+
+nav:
+  language: 切换语言
+  away: 返回主站
+  home: 全部照片
+  stories: 故事
+  globe: 按国家和地区浏览
+  airports: 按机场浏览
+  wildlife: 野生动物
+
+to_top: 回到顶部
+
+gallery:
+  empty: 这里还没有照片。
+  all_of: "{place}的全部照片"
+  everything: 全部照片
+  postcard_flag: 这张照片配有明信片
+
+stories:
+  eyebrow: 影像日志
+  title: 故事
+  description: 把照片汇成一段段旅程、漫步，与途中的笔记。
+  read: 阅读全文
+
+story:
+  eyebrow: 随行笔记
+  ai_note: 文字由 AI 生成
+  ai_title: 照片均为本人拍摄；本页文字由语言模型撰写。
+  series: 组图
+  scroll_back: 上一张
+  scroll_on: 下一张
+  through: 至
+  untranslated: 暂无中文版
+  video_unsupported: 你的浏览器无法播放这段视频。
+  video_open: 打开视频文件
+
+globe:
+  panel: 按国家和地区浏览相册
+  eyebrow: 目的地
+  title: 国家和地区
+  world: 世界
+  reset: 重置视角
+  picker: 相册
+  search: 搜索国家或地区
+  list: 可浏览的国家和地区相册
+  canvas: 可交互的地球仪，中央经线会标出当前的国家或地区。可拖动旋转，也可使用方向键。
+  idle_title: 转动地球仪
+  idle_body: 中央经线会指向可浏览的相册。
+  hud: 中央经线 &middot; 拖动探索
+
+airports:
+  panel: 按机场浏览相册
+  eyebrow: 0 个相册
+  title: 机场
+  search_label: 按机场名称、IATA 代码、ICAO 代码或国家搜索
+  search: 搜索机场或城市
+  list: 可浏览的机场相册
+  empty: 没有匹配的相册。
+
+postcard:
+  kind: 明信片
+
+print: 本页照片受版权保护，恕不提供打印。
+
+js:
+  photographs_none: 暂无照片
+  photographs_one: "{count} 张照片"
+  photographs_many: "{count} 张照片"
+  explore_regions: 可按地区浏览
+  none_here: 此处暂无照片
+  idle_title: 转动地球仪
+  idle_body: 中央经线会指向可浏览的相册。
+  pick_title: 选择一个地区
+  pick_body: 将光标移到地图上，或从列表中选择。
+  view_place: "查看{name}，{count}"
+  empty_place: "{name}，暂无照片"
+  no_match: 没有匹配的相册。
+  drawing: 正在绘制地图…
+
+  countries_title: 国家和地区
+  destinations_one: "{count} 个目的地"
+  destinations_many: "{count} 个目的地"
+  gallery_picker: 相册
+  country_search: 搜索国家或地区
+  country_list: 可浏览的国家和地区相册
+  country_canvas: 可交互的地球仪，中央经线会标出当前的国家或地区。可拖动旋转，也可使用方向键。
+  world_hud: 中央经线 &middot; 拖动探索
+
+  region_picker: 地区
+  region_search: 搜索地区
+  regions_count: "{lit}/{total} {noun}"
+  regions_of: "{place}的省级行政区"
+  region_canvas: "{place}地图，有照片的地区会高亮显示。"
+  all_from: "{place}的全部 {count} 张照片"
+  region_hud: 亮起的地区设有相册
+  region_hud_note: 国界与地球仪上所绘一致；限于版面，南海诸岛未予绘出。
+
+  regions_unavailable: 地区数据无法载入
+  globe_unavailable: 地球仪无法载入
+  refresh: 请刷新页面后重试。
+  region_geometry_error: 无法载入地区边界。
+  country_geometry_error: 无法载入国界数据。
+  destinations_error: 无法载入目的地数据。
+
+  airport_open: "查看{name}相册"
+  airport_coord: 坐标
+  airport_elev: 标高
+  airport_frames: 数量
+  airport_elevation_unit: "{feet} 英尺"
+  galleries_one: "{count} 个相册"
+  galleries_many: "{count} 个相册"
+  airport_error: 机场相册载入失败，请刷新页面后重试。
+
+  postcard: 明信片
+  photograph: 照片
+  show_postcard: 翻到明信片
+  show_photograph: 翻回照片
+  postcard_location: 地点
+  postcard_date: 日期
+  postcard_camera: 相机
+  postcard_number: "No. {number}"
+  postcard_error: 无法载入明信片。

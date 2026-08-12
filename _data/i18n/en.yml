@@ -1,0 +1,156 @@
+# Interface text, English.
+#
+# Every locale file has the same keys. A key missing from a translation falls
+# back to this file, so a half-finished translation still renders -- it just
+# renders partly in English.
+#
+# `js` is the only part the browser sees: _includes/header.html writes it into
+# the page as window.SiteText, and the scripts read it from there. Braces are
+# placeholders filled in by the script, e.g. "{count} photographs".
+#
+# See _plugins/i18n.rb for how locales are put together, and
+# _reference/*.<code>.csv for the names of places.
+
+label: English
+short: EN
+
+site:
+  title: Photography by Zhiyuan Pan
+  description: See the world through my eyes!
+
+date:
+  # Liquid `date:` formats. Only used where the site writes a date itself; a
+  # date typed into a story's front matter is printed as typed.
+  month_year: "%B %Y"
+  day_month_year: "%b %-d, %Y"
+  postcard: "%-d %B %Y"
+
+nav:
+  language: Switch language
+  away: Leave the album
+  home: Every photograph
+  stories: Stories
+  globe: Galleries by country
+  airports: Galleries by airport
+  wildlife: Wildlife
+
+to_top: Back to the top
+
+gallery:
+  empty: No photographs here yet.
+  all_of: All of {place}
+  everything: Every photograph
+  postcard_flag: This photograph has a postcard
+
+stories:
+  eyebrow: Photo journal
+  title: Stories
+  description: Photographs gathered into journeys, walks, and field notes.
+  read: Read story
+
+story:
+  eyebrow: Field notes
+  ai_note: AI-generated text
+  ai_title: The photographs are mine; the words on this page were written by a language model.
+  series: Photo series
+  scroll_back: Scroll back
+  scroll_on: Scroll on
+  through: through
+  untranslated: This story has not been translated yet.
+  video_unsupported: Your browser cannot play this video.
+  video_open: Open the video file.
+
+globe:
+  panel: Explore photo galleries by country
+  eyebrow: DESTINATIONS
+  title: Countries
+  world: World
+  reset: Reset view
+  picker: Gallery
+  search: Find a country
+  list: Available country galleries
+  canvas: >-
+    Interactive globe with a center meridian that highlights the current
+    country. Drag to rotate, or use the arrow keys.
+  idle_title: Let the globe turn
+  idle_body: The center guide will find a gallery.
+  hud: Center guide &middot; drag to explore
+
+airports:
+  panel: Explore photo galleries by airport
+  eyebrow: 0 GALLERIES
+  title: Airports
+  search_label: Search airports by name, IATA code, ICAO code, or country
+  search: Find an airport or city
+  list: Available airport galleries
+  empty: No galleries match that search.
+
+postcard:
+  kind: Postcard
+
+# Names that are too short to deserve a reference file of their own live in
+# _plugins/atlas.rb, beside the thing they name.
+print: The photographs on this page are copyright and are not available in print.
+
+js:
+  photographs_none: No photographs yet
+  photographs_one: "{count} photograph"
+  photographs_many: "{count} photographs"
+  explore_regions: explore regions
+  none_here: No photographs here yet
+  idle_title: Let the globe turn
+  idle_body: The center guide will find a gallery.
+  pick_title: Pick a region
+  pick_body: Hover the map or use the list.
+  view_place: "View {name}, {count}"
+  empty_place: "{name}, no photographs yet"
+  no_match: No galleries match that search.
+  drawing: Drawing the map...
+
+  countries_title: Countries
+  destinations_one: "{count} DESTINATION"
+  destinations_many: "{count} DESTINATIONS"
+  gallery_picker: Gallery
+  country_search: Find a country
+  country_list: Available country galleries
+  country_canvas: >-
+    Interactive globe with a center meridian that highlights the current
+    country. Drag to rotate, or use the arrow keys.
+  world_hud: Center guide &middot; drag to explore
+
+  region_picker: Region
+  region_search: Find a region
+  regions_count: "{lit} OF {total} {noun}"
+  regions_of: Regions of {place}
+  region_canvas: "Map of {place}. Regions with photographs are highlighted."
+  all_from: All {count} photographs from {place}
+  region_hud: Lit regions have galleries
+  region_hud_note: >-
+    Border as drawn on the globe. Islands in the South China Sea are left off
+    for space.
+
+  regions_unavailable: Regions unavailable
+  globe_unavailable: The globe is unavailable
+  refresh: Refresh the page to try again.
+  region_geometry_error: Could not load region boundaries.
+  country_geometry_error: Could not load country geometry.
+  destinations_error: Could not load destinations.
+
+  airport_open: Open {name} photo gallery
+  airport_coord: COORD
+  airport_elev: ELEV
+  airport_frames: FRAMES
+  airport_elevation_unit: "{feet} ft"
+  galleries_one: "{count} GALLERY"
+  galleries_many: "{count} GALLERIES"
+  airport_error: Airport galleries could not be loaded. Please refresh and try again.
+
+  postcard: Postcard
+  photograph: Photograph
+  show_postcard: Show the postcard
+  show_photograph: Show the photograph
+  postcard_location: Location
+  postcard_date: Date
+  postcard_camera: Camera
+  postcard_number: "No. {number}"
+  postcard_error: Could not load postcards.

@@ -1,0 +1,97 @@
+/*
+ * The two editions.
+ *
+ * The Chinese pages are the same pages: same layout, same components, same
+ * palette. Only two things genuinely have to change.
+ *
+ * The first is the small caps. This design leans on tiny wide-tracked upper
+ * case for its labels -- 0.6rem at 0.16em is elegant in Latin and unreadable
+ * in Chinese, where each glyph carries far more detail and upper case does
+ * nothing at all. Those labels are set larger and tighter below.
+ *
+ * The second is the language switch itself, which is the only word in the
+ * navigation bar among six icons.
+ *
+ * Font families are not here: the CJK faces are appended to the shared stacks
+ * in _sass/libs/_vars.scss, so a Chinese name reads properly wherever it turns
+ * up, including inside an English page.
+ */
+
+/* The language switch.
+ *
+ * Ruled off from the icons, because it is the one control in the bar that
+ * changes the page you are on rather than taking you to another one. The
+ * glyph says "language" and the label says which one you would get. */
+.nav-language {
+	border-left: solid 1px rgba(255, 255, 255, 0.12);
+	margin-left: 0.4em;
+
+	a {
+		/* Left as an inline block like its neighbours. A flex box here would
+		   throw away the bar's line-height, and with it most of the height of
+		   something meant to be tapped. */
+		white-space: nowrap;
+	}
+
+	.nav-language-label {
+		font-size: 0.82em;
+		letter-spacing: 0.06em;
+		margin-left: 0.15em;
+	}
+
+	/* Room runs out before meaning does: on a phone the glyph and the title
+	   carry it, and the label steps aside. */
+	@include breakpoint(xsmall) {
+		.nav-language-label {
+			display: none;
+		}
+	}
+}
+
+/* A story shown in a language it was not written in. */
+.story-untranslated {
+	font-style: italic;
+	opacity: 0.75;
+	text-transform: none;
+}
+
+html[lang^='zh'] {
+	.globe-eyebrow,
+	.story-eyebrow {
+		font-size: 0.78rem;
+		letter-spacing: 0.06em;
+	}
+
+	.airport-spec-label,
+	.postcard-field dt {
+		font-size: 0.72rem;
+		letter-spacing: 0.05em;
+	}
+
+	.story-card-meta {
+		font-size: 0.76rem;
+		letter-spacing: 0.04em;
+	}
+
+	/* Region codes stay in the Latin alphabet -- ZJ, SH -- so they keep the
+	   original treatment; the name beside them does not. */
+	#country-list .country-name {
+		letter-spacing: 0.02em;
+	}
+
+	/* No Chinese face ships an italic, so the browser shears the upright one.
+	   The line under a postcard's title keeps its quieter voice through size
+	   and tracking instead. */
+	.postcard-kind {
+		font-style: normal;
+		letter-spacing: 0.3em;
+		text-indent: 0.3em;
+	}
+
+	@include breakpoint(small) {
+		.globe-eyebrow,
+		.story-eyebrow {
+			font-size: 0.74rem;
+		}
+	}
+}

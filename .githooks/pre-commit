@@ -1,0 +1,69 @@
+#!/bin/sh
+#
+# Rebuild what the site actually serves, and refuse the commit if the site
+# cannot be built.
+#
+# assets/css/main.min.css and assets/js/site.min.js are generated from _sass
+# and _js. Committing a source change without them would ship a stale site, so
+# this rebuilds and stages them for you.
+#
+# Runs on Windows as well as macOS and Linux: Git for Windows carries its own
+# sh, so the only real differences are that the tools are named npm.cmd and
+# bundle.bat, and that a GUI client can start with a thinner PATH than a
+# terminal has -- hence the lookup below rather than a bare `npm`.
+#
+# Installed by `npm install` (the prepare script sets core.hooksPath). To run
+# it by hand: git config core.hooksPath .githooks
+# To skip it once: git commit --no-verify
+
+set -e
+
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+
+# Find a command by its plain name, then by the Windows wrappers.
+find_command() {
+    for candidate in "$1" "$1.cmd" "$1.bat" "$1.exe"; do
+        if command -v "$candidate" >/dev/null 2>&1; then
+            command -v "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+
+needs_assets=$(printf '%s\n' "$staged" | grep -E '^(_sass/|_js/|_tools/)' || true)
+needs_site=$(printf '%s\n' "$staged" | grep -E '^(_sass/|_js/|_tools/|_plugins/|_includes/|_layouts/|_data/|_reference/|_stories/|_config\.yml|assets/)' || true)
+
+if [ -n "$needs_assets" ]; then
+    npm=$(find_command npm || true)
+
+    if [ -z "$npm" ]; then
+        echo "pre-commit: npm was not found on PATH; cannot rebuild the assets." >&2
+        echo "            Run 'npm run build' yourself, or commit with --no-verify." >&2
+        exit 1
+    fi
+
+    echo "pre-commit: rebuilding assets"
+    "$npm" run build --silent
+    git add assets/css/main.min.css assets/js/site.min.js
+fi
+
+if [ -n "$needs_site" ]; then
+    bundler=$(find_command bundle || true)
+
+    if [ -z "$bundler" ]; then
+        echo "pre-commit: bundler was not found on PATH; skipping the build check." >&2
+        exit 0
+    fi
+
+    echo "pre-commit: building the site"
+    if ! "$bundler" exec jekyll build --quiet; then
+        echo "pre-commit: jekyll build failed; the commit was not made." >&2
+        exit 1
+    fi
+fi
+
+exit 0

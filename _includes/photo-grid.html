@@ -1,0 +1,60 @@
+{%- comment -%}
+Selects photographs for a gallery, and renders them as a thumbnail grid.
+
+Parameters
+  prefix    gallery prefix to filter by, e.g. "cn", "cn-zj", "pek", "wild".
+            Omit (or pass an empty string) to select every photograph.
+  reversed  "true" to list the newest files first.
+  mode      "count" to emit one dot per match instead of the grid, so callers
+            can count photographs without repeating the matching rule below.
+
+Matching rule: a filename is <prefix>-<timestamp>.<ext>, where <prefix> may
+itself contain hyphens. A gallery keeps a photograph when its prefix equals the
+gallery prefix, or begins with it followed by a hyphen -- so /cn also holds
+cn-zj-*, while /cn-zj holds only Zhejiang. Airport galleries stand on their
+own: pek-* belongs to /pek alone, never to /cn or /cn-bj.
+{%- endcomment -%}
+
+{%- assign locale = page.locale | default: site.default_locale -%}
+{%- assign t = site.data.i18n[locale] -%}
+{%- assign wanted = include.prefix | default: '' -%}
+{%- assign counting = false -%}
+{%- if include.mode == 'count' -%}{%- assign counting = true -%}{%- endif -%}
+
+{%- assign marker = wanted | append: '-' -%}
+
+{%- if include.reversed == 'true' -%}
+    {%- assign photos = site.static_files | reverse -%}
+{%- else -%}
+    {%- assign photos = site.static_files -%}
+{%- endif -%}
+
+{%- for image in photos -%}
+{%- if image.path contains site.image_fulls_loc -%}
+    {%- assign matched = false -%}
+    {%- if wanted == '' -%}
+        {%- assign matched = true -%}
+    {%- else -%}
+        {%- assign parts = image.name | split: '-' -%}
+        {%- assign trunk = parts.size | minus: 1 -%}
+        {%- assign label = parts | slice: 0, trunk | join: '-' | append: '-' -%}
+        {%- assign head = label | slice: 0, marker.size -%}
+        {%- if head == marker -%}{%- assign matched = true -%}{%- endif -%}
+    {%- endif -%}
+    {%- if matched -%}
+        {%- if counting -%}.
+        {%- else -%}
+            {%- assign postcard = false -%}
+            {%- if site.data.postcard_photos contains image.name %}{% assign postcard = true %}{% endif %}
+<article class="thumb{% if postcard %} has-postcard{% endif %}">
+    <a href="{{ site.baseurl }}{{ site.image_fulls_loc }}/{{ image.name }}" class="image">
+        <img data-src="{{ site.baseurl }}{{ site.image_small_loc }}/{{ image.name }}"
+            data-src-2x="{{ site.baseurl }}{{ site.image_thumbs_loc }}/{{ image.name }}"
+            alt="" loading="lazy" decoding="async"
+            data-name="{{ image.name }}"{% if postcard %} data-postcard="true"{% endif %}/></a>
+    {%- if postcard %}<span class="thumb-postcard-flag" aria-label="{{ t.gallery.postcard_flag }}"><i class="fa fa-envelope-o" aria-hidden="true"></i></span>{% endif %}
+</article>
+        {%- endif -%}
+    {%- endif -%}
+{%- endif -%}
+{%- endfor -%}

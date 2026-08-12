@@ -1,0 +1,56 @@
+/*
+ * Copy deterrents.
+ *
+ * What this actually does: printing and "save as PDF" produce a copyright
+ * notice instead of the photographs, images cannot be dragged out or saved
+ * through the context menu, and nothing on the page is selectable.
+ *
+ * What no web page can do: stop a screenshot. The operating system takes
+ * those, the browser never sees them, and there is no DRM for images on the
+ * web -- Encrypted Media Extensions covers audio and video streams only.
+ */
+
+@media print {
+	body * {
+		visibility: hidden !important;
+	}
+
+	/* The wording lives with the rest of the interface text, in
+	   _data/i18n/<locale>.yml, and reaches the stylesheet on the body. */
+	body::after {
+		color: #000;
+		content: attr(data-print-notice);
+		display: block;
+		font-family: _font(family-serif);
+		font-size: 12pt;
+		left: 0;
+		line-height: 1.6;
+		padding: 4rem;
+		position: fixed;
+		right: 0;
+		top: 0;
+		visibility: visible !important;
+	}
+
+	#wrapper,
+	#main,
+	.poptrox-popup,
+	.poptrox-overlay {
+		background: #fff !important;
+		display: none !important;
+	}
+}
+
+.thumb .image,
+.thumb img,
+.story-photo .image,
+.story-photo img,
+.poptrox-popup .pic,
+.poptrox-popup .pic img {
+	-webkit-touch-callout: none;
+	-webkit-user-drag: none;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}

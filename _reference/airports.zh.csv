@@ -1,0 +1,19 @@
+# Chinese names for airports that have a gallery. Anything not listed here
+# keeps its English name, and the build says so.
+#
+# `pinyin` and `city_pinyin` are the syllables of the two names above them,
+# separated by spaces, so the search box can match what a Chinese keyboard
+# produces -- "beijing" and "bj" both find 北京. Leave them empty for a name
+# that is not Chinese; the IATA code already searches in Latin.
+#
+# Reference for further airports: https://worldairport.cn/code
+iata,name,municipality,pinyin,city_pinyin
+HKG,香港国际机场,香港,xiang gang guo ji ji chang,xiang gang
+ICN,仁川国际机场,首尔,ren chuan guo ji ji chang,shou er
+LIS,里斯本乌姆贝托·德尔加多机场,里斯本,li si ben,li si ben
+MNL,尼诺·阿基诺国际机场,马尼拉,ni nuo a ji nuo guo ji ji chang,ma ni la
+PEK,北京首都国际机场,北京,bei jing shou du guo ji ji chang,bei jing
+PVG,上海浦东国际机场,上海,shang hai pu dong guo ji ji chang,shang hai
+SIN,新加坡樟宜机场,新加坡,xin jia po zhang yi ji chang,xin jia po
+URC,乌鲁木齐天山国际机场,乌鲁木齐,wu lu mu qi tian shan guo ji ji chang,wu lu mu qi
+YVR,温哥华国际机场,温哥华,wen ge hua guo ji ji chang,wen ge hua

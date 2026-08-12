@@ -1,0 +1,27 @@
+{% assign video = include.video %}
+{% assign locale = page.locale | default: site.default_locale %}
+{% assign t = site.data.i18n[locale] %}
+{% assign fallback_source = video.src %}
+{% if video.sources and video.sources.size > 0 %}
+    {% assign fallback_source = video.sources[0].src %}
+{% endif %}
+<video
+    class="story-video-player"
+    playsinline
+    preload="{{ video.preload | default: 'metadata' }}"
+    {% unless video.controls == false %}controls{% endunless %}
+    {% if video.poster %}poster="{{ video.poster | relative_url }}"{% endif %}
+    {% if video.autoplay %}autoplay muted{% elsif video.muted %}muted{% endif %}
+    {% if video.loop %}loop{% endif %}
+    {% if video.alt or video.title %}aria-label="{{ video.alt | default: video.title | escape }}"{% endif %}
+>
+    {% if video.sources %}
+        {% for source in video.sources %}
+        <source src="{{ source.src | relative_url }}"{% if source.type %} type="{{ source.type }}"{% endif %}>
+        {% endfor %}
+    {% elsif video.src %}
+        <source src="{{ video.src | relative_url }}"{% if video.mime_type %} type="{{ video.mime_type }}"{% endif %}>
+    {% endif %}
+    {{ t.story.video_unsupported }}
+    {% if fallback_source %}<a href="{{ fallback_source | relative_url }}">{{ t.story.video_open }}</a>{% endif %}
+</video>

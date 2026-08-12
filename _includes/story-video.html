@@ -1,0 +1,14 @@
+{% assign video = include.video %}
+{% if video %}
+{% if video.src or video.sources %}
+<figure class="story-video-block{% if video.ratio %} is-video-{{ video.ratio }} has-explicit-ratio{% endif %}">
+    {% include story-video-player.html video=video %}
+    {% if video.caption or video.credit %}
+    <figcaption>
+        {% if video.caption %}<span>{{ video.caption }}</span>{% endif %}
+        {% if video.credit %}<small>{{ video.credit }}</small>{% endif %}
+    </figcaption>
+    {% endif %}
+</figure>
+{% endif %}
+{% endif %}

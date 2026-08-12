@@ -1,0 +1,114 @@
+{%- assign locale = include.locale -%}
+{%- assign t = include.t -%}
+{%- assign locale_meta = include.locale_meta -%}
+<meta charset="utf-8"/>
+{%- comment -%}
+First thing in the document, before anything is fetched or painted: send the
+reader to their language if this is not it. `alternates` is written by
+_plugins/i18n.rb and always has an entry for every locale, so the destination
+is a page that exists.
+{%- endcomment -%}
+{%- capture alternates_json -%}
+{ {% for other in site.locales %}"{{ other.code }}":"{{ page.alternates[other.code] | relative_url }}"{% unless forloop.last %},{% endunless %}{% endfor %} }
+{%- endcapture -%}
+<script>
+(function () {
+    var here = '{{ locale }}';
+    var alternates = {{ alternates_json }};
+    var key = 'photography:locale';
+
+    function stored() {
+        try { return window.localStorage.getItem(key); } catch (error) { return null; }
+    }
+
+    function remember(code) {
+        try { window.localStorage.setItem(key, code); } catch (error) { /* private mode */ }
+    }
+
+    /* ?lang=zh is how the switch in the header speaks: it is a plain link, so
+       the choice survives even if the click never reaches a script. */
+    var asked = null;
+    var query = window.location.search;
+    var match = query.match(/[?&]lang=([a-z-]+)/i);
+    if (match && alternates[match[1]]) {
+        asked = match[1];
+        remember(asked);
+
+        /* Take it back out of the address bar, so the page can be shared and
+           bookmarked without pinning everyone who opens it to one language. */
+        if (window.history && window.history.replaceState) {
+            var tidied = query.replace(/([?&])lang=[a-z-]+&?/i, '$1').replace(/[?&]$/, '');
+            window.history.replaceState(window.history.state, '',
+                window.location.pathname + tidied + window.location.hash);
+        }
+    }
+
+    var wanted = asked || stored();
+
+    /* A stored choice is honoured anywhere. The browser's preference is only
+       allowed to move a reader off the default edition, which lives at the
+       root and so carries no signal about what anyone wanted: /zh/cn was a
+       deliberate address, /cn is just the site. Without this, a link shared in
+       Chinese would spring back to English for half the people who open it. */
+    if (!wanted && {{ site.default_locale | jsonify }} === here) {
+        /* Any Chinese tag takes Simplified: there is no Traditional edition,
+           and Simplified is nearer to it than English is. The switch in the
+           header overrides this for anyone who disagrees. */
+        var offered = navigator.languages || [navigator.language || ''];
+        for (var index = 0; index < offered.length && !wanted; index++) {
+            var tag = String(offered[index]).toLowerCase();
+            for (var code in alternates) {
+                if (tag === code || tag.indexOf(code + '-') === 0) { wanted = code; break; }
+            }
+        }
+    }
+
+    if (wanted && wanted !== here && alternates[wanted]) {
+        /* replace, not assign: the language the reader did not want should not
+           sit in the history waiting for the back button. */
+        window.location.replace(
+            alternates[wanted] + window.location.search + window.location.hash
+        );
+    }
+})();
+</script>
+<title>{% if page.title %}{{ page.title }} &middot; {{ t.site.title }}{% else %}{{ t.site.title }}{% endif %}</title>
+<meta name="description" content="{{ page.description | default: t.site.description }}"/>
+<!-- The page is pinned; the lightbox has its own zoom (see _js/zoom.js). -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+{% for other in site.locales %}<link rel="alternate" hreflang="{{ other.lang }}" href="{{ page.alternates[other.code] | absolute_url }}"/>
+{% endfor %}<link rel="alternate" hreflang="x-default" href="{{ page.alternates[site.default_locale] | absolute_url }}"/>
+<link rel="stylesheet" href="{{ '/assets/css/main.min.css' | relative_url }}?v={{ site.time | date: '%s' }}"/>
+<script>
+(function () {
+    var isEmbedded = false;
+
+    try {
+        isEmbedded = window.self !== window.top;
+    } catch (error) {
+        isEmbedded = true;
+    }
+
+    if (isEmbedded) {
+        document.documentElement.classList.add('is-iframe');
+    }
+
+    document.documentElement.setAttribute(
+        'data-postcards-url',
+        '{{ '/assets/' | append: locale_meta.asset_dir | append: 'postcards.json' | relative_url }}'
+    );
+    document.documentElement.setAttribute('data-baseurl', '{{ site.baseurl }}/');
+    document.documentElement.setAttribute('data-locale', '{{ locale }}');
+
+    /* Everything the scripts have to say, already in this page's language.
+       Placeholders in braces are filled in by SiteText.format. */
+    window.SiteText = {{ t.js | jsonify }};
+    window.SiteText.format = function (template, values) {
+        return String(template || '').replace(/\{(\w+)\}/g, function (whole, name) {
+            return Object.prototype.hasOwnProperty.call(values || {}, name)
+                ? values[name]
+                : whole;
+        });
+    };
+})();
+</script>

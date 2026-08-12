@@ -1,0 +1,1319 @@
+/* The globe, the regional map and the airport list. */
+
+.sr-only {
+	border: 0;
+	clip: rect(0 0 0 0);
+	clip-path: inset(50%);
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	padding: 0;
+	position: absolute;
+	white-space: nowrap;
+	width: 1px;
+}
+
+body {
+	margin: 0;
+}
+
+html.is-iframe #header nav > ul > li.hide-in-iframe {
+	display: none;
+}
+
+:root {
+	--atlas-ink: #181a1d;
+	--atlas-panel: rgba(36, 38, 41, 0.58);
+	--atlas-panel-soft: rgba(46, 49, 52, 0.72);
+	--atlas-line: #36383c;
+	--atlas-muted: #a4a5a7;
+	--atlas-sand: #34a58e;
+	--atlas-sand-bright: #6fd6c1;
+	--atlas-cream: #ffffff;
+}
+
+html,
+body {
+	height: 100%;
+	overflow: hidden;
+	/* Scrolling yes, pinch-zoom no: the lightbox does its own (see _js/zoom.js). */
+	touch-action: pan-x pan-y;
+}
+
+body {
+	height: 100vh;
+	height: 100dvh;
+}
+
+#wrapper {
+	height: 100%;
+	overflow: hidden;
+}
+
+#main {
+	height: 100%;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	scrollbar-color: rgba(52, 165, 142, 0.52) rgba(0, 0, 0, 0.12);
+	scrollbar-width: thin;
+}
+
+#main::-webkit-scrollbar {
+	width: 0.45rem;
+}
+
+#main::-webkit-scrollbar-track {
+	background: rgba(0, 0, 0, 0.12);
+}
+
+#main::-webkit-scrollbar-thumb {
+	background: rgba(52, 165, 142, 0.52);
+	border-radius: 999px;
+}
+
+body.content-active #main,
+body.modal-active #main {
+	overflow: hidden;
+}
+
+html.content-active,
+body.content-active {
+	overflow: hidden;
+	overscroll-behavior: none;
+}
+
+body.content-active {
+	left: 0;
+	position: fixed;
+	right: 0;
+	width: 100%;
+}
+
+body.modal-active .panel {
+	opacity: 0;
+	pointer-events: none;
+	transition: none;
+	visibility: hidden;
+}
+
+body.modal-active #wrapper {
+	-webkit-filter: none;
+	filter: none;
+}
+
+body.modal-active #main,
+body.modal-active #header {
+	-webkit-filter: blur(8px);
+	filter: blur(8px);
+}
+
+body.modal-active #wrapper::after {
+	bottom: 0;
+	height: auto;
+	position: fixed;
+	right: 0;
+}
+
+#world-map.globe-panel,
+#airport-selector.airport-panel {
+	--panel-vertical-padding: 6em;
+	height: auto !important;
+	max-height: calc(100vh - 4em);
+	max-height: calc(100dvh - 4em);
+	overflow: hidden;
+}
+
+#world-map > .closer,
+#airport-selector > .closer {
+	position: absolute;
+	z-index: 10;
+}
+
+.globe-explorer,
+.airport-explorer {
+	max-height: calc(100vh - 4em - var(--panel-vertical-padding));
+	max-height: calc(100dvh - 4em - var(--panel-vertical-padding));
+	overscroll-behavior: contain;
+}
+
+.globe-explorer {
+	overflow-y: auto;
+}
+
+.globe-explorer {
+	box-sizing: border-box;
+	display: grid;
+	grid-template-columns: minmax(0, 1.62fr) minmax(310px, 0.7fr);
+	gap: clamp(1.25rem, 2.5vw, 3rem);
+	margin: 0 auto;
+	max-width: 75em;
+}
+
+.globe-hero {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.globe-heading {
+	align-items: end;
+	display: flex;
+	justify-content: space-between;
+	gap: 2rem;
+}
+
+.globe-heading h2 {
+	color: var(--atlas-cream);
+	font-size: 1.5em;
+	font-weight: 300;
+	letter-spacing: 0.1em;
+	line-height: 1.5;
+	margin: 0.2em 0 0;
+	text-transform: uppercase;
+}
+
+.globe-eyebrow {
+	color: var(--atlas-sand);
+	font-size: 0.62rem;
+	font-weight: 400;
+	letter-spacing: 0.16em;
+	margin: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.globe-back {
+	align-items: center;
+	align-self: center;
+	background: rgba(52, 165, 142, 0.12);
+	border: 1px solid rgba(52, 165, 142, 0.4);
+	border-radius: 999px;
+	box-shadow: none;
+	color: var(--atlas-cream) !important;
+	display: inline-flex;
+	flex: 0 0 auto;
+	font-size: 0.62rem;
+	gap: 0.45rem;
+	height: 2.2rem;
+	justify-content: center;
+	letter-spacing: 0.1em;
+	line-height: 1;
+	margin-right: 3.25rem;
+	padding: 0 1rem;
+	text-transform: uppercase;
+}
+
+.globe-back:hover,
+.globe-back:focus {
+	background: rgba(52, 165, 142, 0.22);
+	border-color: var(--atlas-sand-bright);
+	box-shadow: none;
+	color: var(--atlas-cream) !important;
+}
+
+.globe-back i {
+	color: var(--atlas-sand-bright);
+	line-height: 1;
+	margin: 0;
+}
+
+.globe-back[hidden] {
+	display: none;
+}
+
+.globe-stage {
+	height: min(52vh, 30rem);
+	min-height: 24rem;
+	overflow: hidden;
+	position: relative;
+}
+
+#country-globe {
+	cursor: grab;
+	display: block;
+	height: 100%;
+	outline: none;
+	touch-action: none;
+	width: 100%;
+}
+
+#country-globe:active {
+	cursor: grabbing;
+}
+
+#country-globe:focus-visible {
+	box-shadow: inset 0 0 0 2px var(--atlas-sand);
+}
+
+.globe-hud {
+	bottom: 1.2rem;
+	color: rgba(245, 241, 232, 0.6);
+	display: flex;
+	font-size: 0.67rem;
+	gap: 1.2rem;
+	left: 0;
+	letter-spacing: 0.08em;
+	max-width: 22rem;
+	position: absolute;
+	text-transform: uppercase;
+}
+
+.globe-hud small {
+	color: rgba(245, 241, 232, 0.5);
+	display: block;
+	font-size: 0.64rem;
+	letter-spacing: 0.05em;
+	line-height: 1.5;
+	margin-top: 0.35rem;
+	text-transform: none;
+}
+
+.globe-hud i {
+	color: var(--atlas-sand);
+	margin-right: 0.35rem;
+}
+
+.globe-selection {
+	background: rgba(11, 17, 19, 0.76);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 0.4rem;
+	box-shadow: 0 18px 55px rgba(0, 0, 0, 0.22);
+	display: flex;
+	flex-direction: column;
+	left: 0;
+	padding: 0.75rem 0.9rem;
+	pointer-events: none;
+	position: absolute;
+	top: 1.5rem;
+	transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.globe-selection.is-available {
+	border-color: rgba(52, 165, 142, 0.55);
+	transform: translateY(-2px);
+}
+
+.globe-selection.is-meridian {
+	box-shadow:
+		inset 2px 0 0 rgba(111, 214, 193, 0.72),
+		0 18px 55px rgba(0, 0, 0, 0.22);
+}
+
+.globe-selection strong {
+	color: var(--atlas-cream);
+	font-size: 1rem;
+	font-weight: 500;
+}
+
+.globe-selection small {
+	color: var(--atlas-muted);
+	font-size: 0.68rem;
+	margin-top: 0.12rem;
+}
+
+.globe-reset {
+	align-items: center;
+	background: rgba(36, 38, 41, 0.68);
+	border: 1px solid var(--atlas-line);
+	border-radius: 999px;
+	bottom: 1rem;
+	box-shadow: none;
+	color: var(--atlas-cream) !important;
+	display: inline-flex;
+	font-size: 0.65rem;
+	gap: 0.45rem;
+	height: 2.5rem;
+	justify-content: center;
+	letter-spacing: 0.08em;
+	line-height: 1;
+	padding: 0 1rem;
+	position: absolute;
+	right: 0;
+	text-transform: uppercase;
+}
+
+.globe-reset[hidden] {
+	display: none;
+}
+
+.globe-reset:hover,
+.globe-reset:focus {
+	background: rgba(52, 165, 142, 0.15);
+	border-color: var(--atlas-sand);
+	box-shadow: none;
+	color: var(--atlas-sand-bright) !important;
+}
+
+.globe-reset i {
+	color: var(--atlas-sand);
+	display: block;
+	line-height: 1;
+	margin: 0;
+}
+
+.globe-sidebar {
+	align-content: center;
+	display: grid;
+	gap: 1rem;
+	min-height: 0;
+	padding: 1.5rem 0;
+}
+
+.country-picker {
+	background: var(--atlas-panel);
+	border: 1px solid var(--atlas-line);
+	border-radius: 0.2rem;
+	padding: 1.2rem;
+}
+
+.country-picker {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.country-picker > label {
+	color: var(--atlas-cream);
+	font-size: 0.7rem;
+	font-weight: 500;
+	letter-spacing: 0.09em;
+	margin-bottom: 0.55rem;
+	text-transform: uppercase;
+}
+
+.country-search-wrap {
+	position: relative;
+}
+
+.country-search-wrap i {
+	color: var(--atlas-muted);
+	font-size: 0.72rem;
+	left: 0.8rem;
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+}
+
+.country-search-wrap input {
+	background: rgba(7, 12, 14, 0.55);
+	border: 1px solid var(--atlas-line);
+	border-radius: 0.28rem;
+	color: var(--atlas-cream);
+	font-size: 0.72rem;
+	height: 2.4rem;
+	padding: 0 2.5rem 0 2.2rem;
+	width: 100%;
+}
+
+.country-search-wrap input::placeholder {
+	color: #6e7b7e;
+}
+
+.country-search-wrap kbd {
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 0.2rem;
+	color: var(--atlas-muted);
+	font: inherit;
+	font-size: 0.6rem;
+	padding: 0.16rem 0.34rem;
+	position: absolute;
+	right: 0.7rem;
+	top: 50%;
+	transform: translateY(-50%);
+}
+
+/* A fixed height, so the world view and a regional map -- one country in the
+   list against thirty-four regions -- are the same size. */
+#country-list {
+	align-content: start;
+	display: grid;
+	gap: 0.25rem;
+	/* Two columns only where a province name fits in one: "Heilongjiang" and
+	   "Inner Mongolia" were being cut to "HEILON..." */
+	grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+	height: min(38vh, 19rem);
+	list-style: none;
+	margin: 0.7rem 0 0;
+	overflow-y: auto;
+	padding: 0 0.2rem 0 0;
+}
+
+#country-list::-webkit-scrollbar {
+	width: 4px;
+}
+
+#country-list::-webkit-scrollbar-thumb {
+	background: rgba(52, 165, 142, 0.45);
+	border-radius: 99px;
+}
+
+#country-list button {
+	align-items: center;
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: 0.25rem;
+	color: #c5cecf !important;
+	display: flex;
+	font-size: 0.67rem;
+	gap: 0.5rem;
+	min-height: 2rem;
+	overflow: hidden;
+	padding: 0.36rem 0.45rem;
+	text-align: left;
+	width: 100%;
+}
+
+#country-list button:hover,
+#country-list button:focus,
+#country-list button.is-active {
+	background: rgba(52, 165, 142, 0.1);
+	border-color: rgba(52, 165, 142, 0.32);
+	color: var(--atlas-cream) !important;
+}
+
+#country-list .country-code {
+	align-items: center;
+	background: rgba(255, 255, 255, 0.06);
+	border-radius: 0.18rem;
+	color: var(--atlas-sand);
+	display: inline-flex;
+	flex: 0 0 1.85rem;
+	font-size: 0.68rem;
+	height: 1.35rem;
+	justify-content: center;
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+}
+
+#country-list .country-name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+#country-list .country-count {
+	color: var(--atlas-muted);
+	flex: 0 0 auto;
+	font-size: 0.66rem;
+	letter-spacing: 0.06em;
+	margin-left: auto;
+	padding-left: 0.35rem;
+}
+
+#country-list button.is-active .country-count,
+#country-list button:hover .country-count {
+	color: var(--atlas-sand-bright);
+}
+
+#country-list button.is-empty {
+	cursor: default;
+	opacity: 0.42;
+}
+
+#country-list button.is-empty:hover,
+#country-list button.is-empty:focus {
+	background: transparent;
+	border-color: transparent;
+}
+
+#country-list .empty-result {
+	color: var(--atlas-muted);
+	font-size: 0.7rem;
+	grid-column: 1 / -1;
+	padding: 0.6rem 0.2rem;
+}
+
+.globe-parent-link {
+	align-items: center;
+	border: 1px solid rgba(52, 165, 142, 0.32);
+	border-radius: 0.25rem;
+	color: var(--atlas-sand-bright) !important;
+	display: flex;
+	font-size: 0.66rem;
+	height: 2.15rem;
+	justify-content: center;
+	letter-spacing: 0.04em;
+	margin-top: 0.7rem;
+	overflow: hidden;
+	padding: 0 0.6rem;
+	text-align: center;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.globe-parent-link:hover,
+.globe-parent-link:focus {
+	background: rgba(52, 165, 142, 0.12);
+	border-color: var(--atlas-sand);
+}
+
+/* Kept in the layout so the two views measure the same. */
+.globe-parent-link.is-empty {
+	border-color: transparent;
+	pointer-events: none;
+	visibility: hidden;
+}
+
+/* Regional map view */
+
+#country-globe {
+	transition: opacity 260ms ease, transform 260ms ease;
+}
+
+/* Set without a transition, so the swap happens behind a curtain that is
+   already down; taking the class off runs the fade in. */
+.globe-stage.is-entering #country-globe {
+	opacity: 0;
+	transform: scale(0.97);
+	transition: none;
+}
+
+.globe-explorer.is-loading .globe-stage {
+	opacity: 0.55;
+}
+
+.airport-explorer {
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	margin: 0 auto;
+	max-width: 75em;
+	overflow: hidden;
+}
+
+/* The heading and the search sit on the panel itself. Only the cards scroll,
+   which is why the heading needs no surface of its own: a second translucent
+   layer inside a translucent panel can never match the panel around it. */
+.airport-scroll {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.airport-scroll::-webkit-scrollbar,
+.globe-explorer::-webkit-scrollbar {
+	width: 0.45rem;
+}
+
+.airport-scroll::-webkit-scrollbar-track,
+.globe-explorer::-webkit-scrollbar-track {
+	background: rgba(0, 0, 0, 0.12);
+}
+
+.airport-scroll::-webkit-scrollbar-thumb,
+.globe-explorer::-webkit-scrollbar-thumb {
+	background: rgba(52, 165, 142, 0.42);
+	border-radius: 999px;
+}
+
+.airport-sticky {
+	border-bottom: 1px solid transparent;
+	flex: 0 0 auto;
+	padding: 0.4rem 0 0.9rem;
+	transition: border-color 200ms ease;
+}
+
+.airport-explorer.has-scrolled .airport-sticky {
+	border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.airport-heading {
+	align-items: center;
+	display: flex;
+	justify-content: flex-start;
+	padding-right: 4.5rem;
+}
+
+.airport-heading h2 {
+	color: var(--atlas-cream);
+	font-size: 1.5em;
+	font-weight: 300;
+	letter-spacing: 0.1em;
+	line-height: 1.5;
+	margin: 0.2em 0 0;
+	text-transform: uppercase;
+}
+
+
+.airport-toolbar {
+	display: block;
+	margin: 0.7rem 0 0;
+}
+
+.airport-search {
+	display: block;
+	max-width: none;
+	position: relative;
+	width: 100%;
+}
+
+.airport-search > i {
+	color: var(--atlas-sand);
+	font-size: 0.82rem;
+	left: 1rem;
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	z-index: 1;
+}
+
+.airport-search input {
+	background: rgba(7, 12, 14, 0.66);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 0.38rem;
+	color: var(--atlas-cream);
+	font-size: 0.78rem;
+	height: 2.85rem;
+	padding: 0 3rem 0 2.75rem;
+	width: 100%;
+}
+
+.airport-search input:focus {
+	border-color: rgba(52, 165, 142, 0.72);
+	box-shadow: 0 0 0 3px rgba(52, 165, 142, 0.1);
+}
+
+.airport-search input::placeholder {
+	color: #6e7b7e;
+}
+
+.airport-search kbd {
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 0.2rem;
+	color: var(--atlas-muted);
+	font: inherit;
+	font-size: 0.63rem;
+	padding: 0.2rem 0.38rem;
+	position: absolute;
+	right: 0.85rem;
+	top: 50%;
+	transform: translateY(-50%);
+}
+
+.airport-grid {
+	display: grid;
+	gap: 1rem;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	list-style: none;
+	margin: 1.2rem 0 0;
+	padding: 0 0 2rem;
+}
+
+/* Drawn like a chart plate: a ruled frame, a ghosted drawing number, and the
+   figures an approach plate would carry. */
+
+.airport-card {
+	background:
+		linear-gradient(180deg, rgba(52, 165, 142, 0.05), rgba(52, 165, 142, 0)),
+		var(--atlas-panel);
+	border: 1px solid var(--atlas-line);
+	color: var(--atlas-cream) !important;
+	display: block;
+	height: 100%;
+	isolation: isolate;
+	overflow: hidden;
+	padding: 1.05rem 1.15rem 0.95rem;
+	position: relative;
+	text-decoration: none;
+	transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+/* Corner ticks, as on a technical drawing. */
+.airport-card::before,
+.airport-card::after {
+	border: 1px solid rgba(111, 214, 193, 0.45);
+	content: '';
+	height: 0.5rem;
+	position: absolute;
+	transition: border-color 180ms ease;
+	width: 0.5rem;
+}
+
+.airport-card::before {
+	border-right: 0;
+	border-bottom: 0;
+	left: 0.42rem;
+	top: 0.42rem;
+}
+
+.airport-card::after {
+	border-left: 0;
+	border-top: 0;
+	bottom: 0.42rem;
+	right: 0.42rem;
+}
+
+.airport-card:hover,
+.airport-card:focus {
+	background:
+		linear-gradient(180deg, rgba(52, 165, 142, 0.12), rgba(52, 165, 142, 0)),
+		var(--atlas-panel-soft);
+	border-color: rgba(52, 165, 142, 0.55);
+	transform: translateY(-2px);
+}
+
+.airport-card:hover::before,
+.airport-card:hover::after,
+.airport-card:focus::before,
+.airport-card:focus::after {
+	border-color: var(--atlas-sand-bright);
+}
+
+.airport-card:focus-visible {
+	box-shadow: 0 0 0 3px rgba(52, 165, 142, 0.22);
+	outline: none;
+}
+
+.airport-watermark {
+	color: rgba(255, 255, 255, 0.05);
+	font-size: 4.6rem;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	line-height: 1;
+	pointer-events: none;
+	position: absolute;
+	right: -0.35rem;
+	top: 0.1rem;
+	z-index: -1;
+}
+
+.airport-head {
+	align-items: baseline;
+	display: flex;
+	gap: 0.62rem;
+}
+
+.airport-iata {
+	color: var(--atlas-sand-bright);
+	font-size: 1.72rem;
+	font-weight: 300;
+	letter-spacing: 0.12em;
+	line-height: 1;
+}
+
+.airport-icao {
+	color: rgba(255, 255, 255, 0.62);
+	font-size: 0.68rem;
+	letter-spacing: 0.16em;
+}
+
+.airport-place {
+	color: rgba(255, 255, 255, 0.66);
+	display: block;
+	font-size: 0.66rem;
+	letter-spacing: 0.1em;
+	margin-top: 0.62rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+.airport-name {
+	color: #fff;
+	display: block;
+	font-size: 0.88rem;
+	line-height: 1.45;
+	margin-top: 0.3rem;
+	min-height: 2.5em;
+}
+
+/* A runway: threshold, centre line, threshold. */
+.airport-runway {
+	background-image:
+		linear-gradient(90deg, var(--atlas-sand) 0 0.7rem, transparent 0.7rem),
+		linear-gradient(270deg, var(--atlas-sand) 0 0.7rem, transparent 0.7rem),
+		repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.34) 0 0.28rem, transparent 0.28rem 0.62rem);
+	background-position: left center, right center, center;
+	background-repeat: no-repeat;
+	background-size: 100% 2px, 100% 2px, calc(100% - 1.8rem) 1px;
+	display: block;
+	height: 2px;
+	margin: 0.85rem 0 0.7rem;
+	opacity: 0.6;
+	transition: opacity 180ms ease;
+}
+
+.airport-card:hover .airport-runway,
+.airport-card:focus .airport-runway {
+	opacity: 1;
+}
+
+.airport-specs {
+	display: grid;
+	gap: 0.24rem;
+}
+
+.airport-spec {
+	align-items: baseline;
+	display: flex;
+	gap: 0.6rem;
+	justify-content: space-between;
+}
+
+.airport-spec-label {
+	color: rgba(255, 255, 255, 0.55);
+	font-size: 0.6rem;
+	letter-spacing: 0.14em;
+}
+
+.airport-spec-value {
+	color: rgba(255, 255, 255, 0.9);
+	font-size: 0.7rem;
+	letter-spacing: 0.02em;
+	white-space: nowrap;
+}
+
+.airport-empty {
+	border: 1px dashed rgba(255, 255, 255, 0.12);
+	border-radius: 0.42rem;
+	color: var(--atlas-muted);
+	font-size: 0.8rem;
+	margin: 1rem 0;
+	padding: 2.5rem;
+	text-align: center;
+}
+
+@media screen and (max-width: 1080px) {
+	#world-map.globe-panel,
+	#airport-selector.airport-panel {
+		--panel-vertical-padding: 4em;
+	}
+
+	.globe-explorer {
+		grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.75fr);
+		gap: 1rem;
+	}
+
+	.airport-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media screen and (max-width: 820px) {
+	#world-map.globe-panel {
+		overflow: hidden;
+	}
+
+	.globe-explorer {
+		display: block;
+		height: auto;
+	}
+
+	.globe-heading {
+		padding-right: 3.5rem;
+	}
+
+	.globe-stage {
+		height: min(48vh, 28rem);
+		margin-top: 0.6rem;
+		min-height: 22rem;
+	}
+
+	.globe-sidebar {
+		grid-template-columns: minmax(0, 1fr);
+		padding: 0 0 2rem;
+	}
+
+	#country-list {
+		height: 13rem;
+	}
+
+}
+
+@media screen and (max-width: 736px) {
+	.globe-heading h2 {
+		font-size: 1.25em;
+	}
+
+	.globe-stage {
+		height: 44vh;
+		min-height: 19rem;
+	}
+
+	.globe-hud {
+		display: none;
+	}
+
+	.globe-selection {
+		top: 0.8rem;
+	}
+
+	.globe-sidebar {
+		display: grid;
+		grid-template-columns: 1fr;
+	}
+
+	.country-picker {
+		padding: 1rem;
+	}
+
+	.airport-sticky {
+		padding-right: 0;
+	}
+
+	.airport-heading h2 {
+		font-size: 1.25em;
+	}
+
+	.airport-toolbar {
+		align-items: stretch;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.airport-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.airport-card {
+		padding: 0.95rem 1rem 0.85rem;
+	}
+
+	.airport-iata {
+		font-size: 1.6rem;
+	}
+}
+
+@media screen and (max-width: 736px) and (orientation: portrait) {
+	#world-map.globe-panel,
+	#airport-selector.airport-panel {
+		bottom: 0;
+		height: auto !important;
+		max-height: none;
+		padding: 0;
+		top: 4em;
+	}
+
+	#world-map > .closer,
+	#airport-selector > .closer {
+		background-position: center;
+		background-size: 2rem;
+		height: 3.5rem;
+		width: 3.5rem;
+	}
+
+	.globe-explorer {
+		height: 100%;
+		max-height: none;
+		padding: 0.8rem 0.9rem;
+	}
+
+	.airport-explorer {
+		height: 100%;
+		max-height: none;
+		padding: 0 0.9rem 0.8rem;
+	}
+
+	.airport-scroll {
+		margin: 0 -0.9rem;
+		padding: 0 0.9rem;
+	}
+
+	.globe-heading {
+		padding-right: 3rem;
+	}
+
+	.globe-heading h2 {
+		font-size: 1.08em;
+		line-height: 1.25;
+	}
+
+	.globe-eyebrow {
+		font-size: 0.66rem;
+	}
+
+	.globe-stage {
+		height: min(40vh, 20rem);
+		margin-top: 0.25rem;
+		min-height: 15.5rem;
+	}
+
+	.globe-selection {
+		padding: 0.55rem 0.68rem;
+		top: 0.45rem;
+	}
+
+	.globe-selection strong {
+		font-size: 0.86rem;
+	}
+
+	.globe-selection small {
+		font-size: 0.6rem;
+	}
+
+	.globe-reset {
+		bottom: 0.35rem;
+		height: 2.75rem;
+		right: 0.2rem;
+	}
+
+	.globe-sidebar {
+		gap: 0.5rem;
+		padding: 0 0 0.5rem;
+	}
+
+	.country-picker {
+		padding: 0.75rem;
+	}
+
+	.country-picker > label {
+		margin-bottom: 0.4rem;
+	}
+
+	.country-search-wrap input {
+		height: 2.25rem;
+	}
+
+	#country-list {
+		height: 10.5rem;
+		margin-top: 0.5rem;
+	}
+
+	#country-list button {
+		min-height: 1.9rem;
+	}
+
+	.airport-sticky {
+		padding: 0.55rem 0 0.62rem;
+	}
+
+	.airport-heading {
+		min-height: 2.25rem;
+		padding-right: 3.1rem;
+	}
+
+	.airport-heading h2 {
+		font-size: 1.08em;
+		line-height: 1.25;
+	}
+
+	.airport-toolbar {
+		margin-top: 0.42rem;
+	}
+
+	.airport-search input {
+		height: 2.55rem;
+	}
+
+	.airport-grid {
+		gap: 0.58rem;
+		margin-top: 0.7rem;
+		padding-bottom: 0.75rem;
+	}
+
+	.airport-card {
+		padding: 0.8rem 0.9rem 0.72rem;
+	}
+
+	.airport-iata {
+		font-size: 1.5rem;
+	}
+
+	.airport-icao {
+		font-size: 0.62rem;
+	}
+
+	.airport-watermark {
+		font-size: 3.6rem;
+	}
+
+	.airport-place {
+		font-size: 0.62rem;
+	}
+
+	.airport-name {
+		font-size: 0.82rem;
+		line-height: 1.4;
+		min-height: 0;
+	}
+
+	.airport-spec-label {
+		font-size: 0.64rem;
+	}
+
+	.airport-spec-value {
+		font-size: 0.66rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.globe-selection,
+	.airport-card,
+	#country-globe {
+		transition: none;
+	}
+}
+
+/* A gallery page that has no photographs */
+
+.gallery-empty {
+	align-items: center;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	min-height: 60vh;
+	padding: 4em 1.5em;
+	text-align: center;
+}
+
+.gallery-empty h1 {
+	color: var(--atlas-cream);
+	font-size: 1.6em;
+	font-weight: 300;
+	letter-spacing: 0.08em;
+	margin: 0.35em 0 0.5em;
+	text-transform: uppercase;
+}
+
+.gallery-empty p {
+	color: var(--atlas-muted);
+	margin: 0;
+}
+
+.gallery-empty-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	justify-content: center;
+	margin-top: 1.5rem !important;
+}
+
+.gallery-empty-actions a {
+	border: 1px solid rgba(52, 165, 142, 0.35);
+	border-radius: 0.25rem;
+	color: var(--atlas-sand-bright) !important;
+	font-size: 0.7rem;
+	letter-spacing: 0.08em;
+	padding: 0.55rem 1rem;
+	text-decoration: none;
+	text-transform: uppercase;
+}
+
+.gallery-empty-actions a:hover,
+.gallery-empty-actions a:focus {
+	background: rgba(52, 165, 142, 0.12);
+	border-color: var(--atlas-sand);
+}
+
+.poptrox-popup .caption p {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem 1.15rem;
+	line-height: 1.5;
+	margin-bottom: 1rem;
+}
+
+.poptrox-popup .caption .exif-item {
+	align-items: center;
+	display: inline-flex;
+	white-space: nowrap;
+}
+
+.poptrox-popup .caption .exif-item i {
+	margin-right: 0.35rem;
+}
+
+.poptrox-popup .caption:not(.has-exif) {
+	display: none !important;
+}
+
+@media screen and (max-width: 736px) {
+	.poptrox-popup .caption.has-exif {
+		display: block !important;
+		padding: 2.5rem 0.8rem 0.15rem;
+	}
+
+	.poptrox-popup .caption p {
+		gap: 0.25rem 0.75rem;
+		margin-bottom: 0.6rem;
+	}
+}
+
+@media screen and (max-width: 480px) {
+	#header nav {
+		width: 100%;
+	}
+
+	#header nav > ul {
+		display: flex;
+		width: 100%;
+	}
+
+	#header nav > ul > li {
+		flex: 1 1 0;
+	}
+
+	#header nav > ul > li > a {
+		display: block;
+		padding-left: 0;
+		padding-right: 0;
+		text-align: center;
+	}
+}
+
+/* Back to the top. The navigation bar is fixed along the bottom of the
+   window, so this sits above it instead of in the usual bottom corner. */
+
+.to-top {
+	align-items: center;
+	background: var(--atlas-panel-soft);
+	border: 1px solid var(--atlas-line);
+	border-radius: 50%;
+	bottom: 5.5em;
+	box-shadow: 0 10px 26px rgba(0, 0, 0, 0.32);
+	color: var(--atlas-cream) !important;
+	cursor: pointer;
+	display: flex;
+	font-size: 1.1rem;
+	height: 2.9rem;
+	justify-content: center;
+	line-height: 1;
+	padding: 0;
+	position: fixed;
+	right: 1.35rem;
+	transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+	width: 2.9rem;
+	z-index: 9000;
+}
+
+.to-top[hidden] {
+	display: none;
+}
+
+.to-top:hover,
+.to-top:focus {
+	background: rgba(52, 165, 142, 0.9);
+	border-color: var(--atlas-sand-bright);
+	color: #fff !important;
+	transform: translateY(-2px);
+}
+
+/* A panel or the lightbox covers the page; the button would float over both. */
+body.content-active .to-top,
+body.modal-active .to-top {
+	display: none;
+}
+
+/* Below this width the template moves the navigation bar to the top of the
+   window, so the bottom corner is free and the button can sit in it. */
+@media screen and (max-width: 736px) {
+	.to-top {
+		bottom: 1.15rem;
+		height: 2.6rem;
+		right: 0.9rem;
+		width: 2.6rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.to-top {
+		transition: none;
+	}
+}

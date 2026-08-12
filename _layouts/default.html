@@ -1,0 +1,156 @@
+{%- assign locale = page.locale | default: site.default_locale -%}
+{%- assign t = site.data.i18n[locale] -%}
+{%- assign locale_meta = site.locales | where: "code", locale | first -%}
+{%- capture atlas_url %}/assets/{{ locale_meta.asset_dir }}atlas.json{% endcapture -%}
+<!DOCTYPE HTML>
+<html lang="{{ locale_meta.lang }}">
+<head>
+    {% include header.html locale=locale t=t locale_meta=locale_meta %}
+</head>
+<body{% if page.layout == 'story' or page.layout == 'stories' %} class="story-view"{% endif %} data-print-notice="{{ t.print | escape }}">
+    <div id="wrapper">
+        <header id="header">
+            <nav>
+                <ul>
+                    <li class="hide-in-iframe">
+                        <a href="{{ site.top_url }}" aria-label="{{ t.nav.away }}" title="{{ t.nav.away }}"><i class="fa fa-arrow-left fa-lg fa-fw" aria-hidden="true"></i></a>
+                    </li>
+                    <li>
+                        <a href="{{ locale_meta.prefix | append: '/' | relative_url }}" aria-label="{{ t.nav.home }}" title="{{ t.nav.home }}"><i class="fa fa-home fa-lg fa-fw" aria-hidden="true"></i></a>
+                    </li>
+                    {% for cat in site.category %}
+                    {%- assign cat_label = t.nav[cat.key] -%}
+                    {% if cat.page contains '#' %}
+                    <li><a href="{{ cat.page }}" aria-label="{{ cat_label }}" title="{{ cat_label }}"><i class="fa fa-{{ cat.icon }} fa-lg fa-fw" aria-hidden="true"></i></a></li>
+                    {% else %}
+                    <li><a href="{{ locale_meta.prefix | append: cat.page | relative_url }}" aria-label="{{ cat_label }}" title="{{ cat_label }}"><i class="fa fa-{{ cat.icon }} fa-lg fa-fw" aria-hidden="true"></i></a></li>
+                    {% endif %}
+                    {% endfor %}
+                    {%- comment -%}
+                    The switch offers the languages this page is not in. The
+                    "translate" glyph says what kind of control it is, and the
+                    label says where it goes, so it does not read as a seventh
+                    destination among six icons.
+
+                    It carries ?lang= so that the choice is remembered even
+                    when the click never reaches JavaScript -- header.html
+                    reads the parameter, stores it, and tidies it out of the
+                    address bar.
+                    {%- endcomment -%}
+                    {% for other in site.locales %}{% unless other.code == locale %}
+                    {%- assign other_strings = site.data.i18n[other.code] -%}
+                    {%- assign other_url = page.alternates[other.code] -%}
+                    {%- unless other_url -%}{%- capture other_url %}{{ other.prefix }}/{% endcapture -%}{%- endunless -%}
+                    <li class="nav-language">
+                        <a href="{{ other_url | relative_url }}?lang={{ other.code }}" data-locale-switch="{{ other.code }}" hreflang="{{ other.lang }}" aria-label="{{ t.nav.language }}: {{ other_strings.label }}" title="{{ t.nav.language }}: {{ other_strings.label }}">
+                            <i class="fa fa-language fa-lg fa-fw" aria-hidden="true"></i>
+                            <span class="nav-language-label" lang="{{ other.lang }}">{{ other_strings.short }}</span>
+                        </a>
+                    </li>
+                    {% endunless %}{% endfor %}
+                </ul>
+            </nav>
+        </header>
+        <div id="main" data-exif='{{ site.exif | jsonify }}'>
+            {{ content }}
+        </div>
+        <button id="to-top" class="to-top" type="button" hidden aria-label="{{ t.to_top }}">
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+        </button>
+        <footer id="world-map" class="panel globe-panel" aria-label="{{ t.globe.panel }}">
+            <div
+                class="globe-explorer"
+                data-geo-url="{{ '/assets/countries.geo.json' | relative_url }}"
+                data-atlas-url="{{ atlas_url | relative_url }}"
+                data-subdivision-geo='{ "cn": "{{ '/assets/china-regions.geo.json' | relative_url }}" }'
+            >
+                <section class="globe-hero">
+                    <div class="globe-heading">
+                        <div>
+                            <p id="globe-destination-count" class="globe-eyebrow">{{ t.globe.eyebrow }}</p>
+                            <h2 id="globe-title">{{ t.globe.title }}</h2>
+                        </div>
+                        <button id="globe-back" class="globe-back" type="button" hidden>
+                            <i class="fa fa-arrow-left" aria-hidden="true"></i>
+                            {{ t.globe.world }}
+                        </button>
+                    </div>
+                    <div class="globe-stage">
+                        <canvas
+                            id="country-globe"
+                            role="img"
+                            tabindex="0"
+                            aria-label="{{ t.globe.canvas }}"
+                        ></canvas>
+                        <div class="globe-hud" aria-hidden="true">
+                            <span><i class="fa fa-crosshairs"></i> {{ t.globe.hud }}</span>
+                        </div>
+                        <div id="globe-selection" class="globe-selection" aria-live="polite">
+                            <strong>{{ t.globe.idle_title }}</strong>
+                            <small>{{ t.globe.idle_body }}</small>
+                        </div>
+                        <button id="globe-reset" class="globe-reset" type="button" aria-label="{{ t.globe.reset }}">
+                            <i class="fa fa-compass" aria-hidden="true"></i>
+                            {{ t.globe.reset }}
+                        </button>
+                    </div>
+                </section>
+
+                <aside class="globe-sidebar">
+                    <section class="country-picker">
+                        <label for="country-search" id="country-picker-label">{{ t.globe.picker }}</label>
+                        <div class="country-search-wrap">
+                            <i class="fa fa-search" aria-hidden="true"></i>
+                            <input
+                                id="country-search"
+                                type="search"
+                                placeholder="{{ t.globe.search }}"
+                                autocomplete="off"
+                                aria-keyshortcuts="/"
+                            >
+                            <kbd>/</kbd>
+                        </div>
+                        <ul id="country-list" aria-label="{{ t.globe.list }}"></ul>
+                        <a id="globe-parent-link" class="globe-parent-link is-empty" aria-hidden="true" tabindex="-1"></a>
+                    </section>
+                </aside>
+            </div>
+        </footer>
+        <footer id="airport-selector" class="panel airport-panel" aria-label="{{ t.airports.panel }}">
+            <div
+                class="airport-explorer"
+                data-atlas-url="{{ atlas_url | relative_url }}"
+            >
+                <div class="airport-sticky">
+                    <header class="airport-heading">
+                        <div>
+                            <p class="globe-eyebrow" aria-live="polite" id="airport-count">{{ t.airports.eyebrow }}</p>
+                            <h2>{{ t.airports.title }}</h2>
+                        </div>
+                    </header>
+                    <div class="airport-toolbar">
+                        <label class="airport-search" for="airport-search">
+                            <i class="fa fa-search" aria-hidden="true"></i>
+                            <span class="sr-only">{{ t.airports.search_label }}</span>
+                            <input
+                                id="airport-search"
+                                type="search"
+                                placeholder="{{ t.airports.search }}"
+                                autocomplete="off"
+                                aria-keyshortcuts="/"
+                            >
+                            <kbd>/</kbd>
+                        </label>
+                    </div>
+                </div>
+                <div class="airport-scroll">
+                    <ul id="airport-list" class="airport-grid" aria-label="{{ t.airports.list }}"></ul>
+                    <p id="airport-empty" class="airport-empty" hidden>{{ t.airports.empty }}</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    {% include footer.html %}
+</body>
+</html>

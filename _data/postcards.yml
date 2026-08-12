@@ -1,0 +1,27 @@
+# Zine postcards.
+#
+# List a photograph here and it gets a flip button in the lightbox and a small
+# envelope mark on its thumbnail. The file name on its own is enough:
+#
+#   - cn-sh-1731339471080.jpg
+#
+# The card fills itself in -- the date and camera come from the photograph's
+# EXIF, the location from where the photograph is filed (cn-sh is Shanghai,
+# pek is Beijing Capital), the number from the position in this list, and the
+# colour swatches are sampled from the photograph. Anything that cannot be
+# worked out is simply left off the card.
+#
+# Override any of it by writing a record instead of a bare file name:
+#
+#   - photo: cn-sh-1731339471080.jpg
+#     title: Pudong Skyline      # defaults to the place
+#     kind: Postcard             # the italic line under the title
+#     location: The Bund         # set to "" to leave it off
+#     date: November 2024        # any text, or a date like 2024-11-11
+#     number: 17
+#     camera: Fujifilm X-T5
+#     illustration: cn-sh-1731339471080.png   # in images/postcards
+#     swatches: ['#4a90d9', '#3a4450', '#e8e8e6']
+#     note: One line printed under the swatches.
+
+- cn-sh-1731339471080.jpg

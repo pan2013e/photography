@@ -1,0 +1,50 @@
+---
+layout: default
+---
+
+{%- assign locale = page.locale | default: site.default_locale -%}
+{%- assign t = site.data.i18n[locale] -%}
+
+{%- comment -%}
+The listing is assembled in _plugins/i18n.rb, which knows which telling of each
+story belongs to this language and which ones are standing in from another. All
+this has to do is draw it.
+{%- endcomment -%}
+{%- assign journal = site.data.journal[locale] -%}
+
+<section class="stories-page">
+    <header class="stories-heading">
+        <p class="story-eyebrow">{{ t.stories.eyebrow }}</p>
+        <h1>{{ page.title | default: t.stories.title }}</h1>
+        <p>{{ page.description | default: t.stories.description }}</p>
+    </header>
+
+    <div class="story-card-grid">
+        {% for story in journal %}
+            {% if story.hero.file %}
+                {% capture card_image %}{{ site.image_thumbs_loc }}/{{ story.hero.file }}{% endcapture %}
+            {% else %}
+                {% assign card_image = story.hero.thumb | default: story.hero.src %}
+            {% endif %}
+            <article class="story-card">
+                <a href="{{ story.url | relative_url }}">
+                    {% if card_image %}
+                    <span class="story-card-image">
+                        <img src="{{ card_image | relative_url }}" alt="" loading="lazy" decoding="async">
+                    </span>
+                    {% endif %}
+                    <span class="story-card-copy">
+                        <span class="story-card-meta">
+                            {% include story-dates.html story=story %}
+                            {% if story.location %}<span>{{ story.location }}</span>{% endif %}
+                            {% if story.told_in != locale %}<span class="story-untranslated">{{ t.story.untranslated }}</span>{% endif %}
+                        </span>
+                        <strong{% if story.told_in != locale %} lang="{{ story.told_in }}"{% endif %}>{{ story.title }}</strong>
+                        {% if story.description %}<span class="story-card-summary"{% if story.told_in != locale %} lang="{{ story.told_in }}"{% endif %}>{{ story.description }}</span>{% endif %}
+                        <span class="story-card-link">{{ t.stories.read }} <i class="fa fa-arrow-right" aria-hidden="true"></i></span>
+                    </span>
+                </a>
+            </article>
+        {% endfor %}
+    </div>
+</section>

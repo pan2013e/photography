@@ -1,0 +1,6 @@
+# Shell scripts must keep LF endings. With core.autocrlf=true, which is the
+# default on Windows, a checkout would otherwise rewrite them to CRLF and sh
+# would fail on the shebang with "/bin/sh^M: bad interpreter" -- which, for a
+# hook, blocks every commit.
+.githooks/** text eol=lf
+*.sh text eol=lf

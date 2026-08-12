@@ -1,0 +1,389 @@
+/*
+ * Zine postcards: the reverse side of a photograph in the lightbox.
+ *
+ * The popup keeps the photograph's own box, so the card is laid out inside
+ * whatever shape that is -- text column beside the illustration on a wide
+ * card, stacked on a narrow one.
+ */
+
+:root {
+	--card-paper: #f2eee6;
+	--card-ink: #23201c;
+	--card-soft: #6f685d;
+	--card-rule: rgba(35, 32, 28, 0.28);
+}
+
+/* Thumbnail mark */
+
+.thumb,
+.story-photo {
+	position: relative;
+}
+
+/* A quiet mark: the same weight as a caption, not a badge. */
+.thumb-postcard-flag {
+	color: rgba(255, 255, 255, 0.5);
+	font-size: 0.7rem;
+	line-height: 1;
+	opacity: 0;
+	pointer-events: none;
+	position: absolute;
+	right: 0.9rem;
+	text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+	top: 0.9rem;
+	transition: opacity 200ms ease, color 200ms ease;
+	z-index: 2;
+}
+
+.thumb:hover .thumb-postcard-flag,
+.story-photo:hover .thumb-postcard-flag {
+	color: rgba(255, 255, 255, 0.9);
+	opacity: 1;
+}
+
+body.touch .thumb-postcard-flag {
+	opacity: 0.55;
+}
+
+/* Flip mechanics */
+
+.poptrox-popup {
+	perspective: 1600px;
+}
+
+.poptrox-popup .pic,
+.poptrox-popup .postcard-face {
+	-webkit-backface-visibility: hidden;
+	backface-visibility: hidden;
+	transition: transform 620ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.poptrox-popup .postcard-face {
+	background: var(--card-paper);
+	bottom: 0;
+	color: var(--card-ink);
+	cursor: default;
+	left: 0;
+	overflow: hidden;
+	position: absolute;
+	right: 0;
+	top: 0;
+	transform: rotateY(180deg);
+	z-index: 3;
+}
+
+.poptrox-popup .postcard-face[hidden] {
+	display: none;
+}
+
+.poptrox-popup.is-flipped .pic {
+	transform: rotateY(180deg);
+}
+
+.poptrox-popup.is-flipped .postcard-face {
+	transform: rotateY(360deg);
+}
+
+.poptrox-popup.is-flipped:before,
+.poptrox-popup.is-flipped .caption,
+.poptrox-popup.is-flipped .nav-previous,
+.poptrox-popup.is-flipped .nav-next {
+	opacity: 0 !important;
+	pointer-events: none;
+}
+
+/* The card is painted above the popup's own controls, so the closer has to
+   come back over it -- and be inverted, or it is a white cross on cream. */
+.poptrox-popup.is-flipped .closer {
+	-webkit-filter: invert(1);
+	filter: invert(1);
+	opacity: 0.45;
+	z-index: 5;
+}
+
+.poptrox-popup.is-flipped:hover .closer {
+	opacity: 0.75;
+}
+
+.poptrox-popup.is-flipped .closer:hover {
+	opacity: 1;
+}
+
+/* As loud as the close button and no louder: it fades in with the popup
+   chrome, and says what it does through its label rather than its size. */
+.postcard-flip {
+	align-items: center;
+	background: rgba(16, 18, 19, 0.5);
+	border: 1px solid rgba(242, 238, 230, 0.3);
+	border-radius: 50%;
+	color: #f2eee6 !important;
+	cursor: pointer;
+	display: inline-flex;
+	font-size: 0.78rem;
+	height: 2.6rem;
+	justify-content: center;
+	line-height: 1;
+	opacity: 0;
+	padding: 0;
+	position: absolute;
+	right: 0.9rem;
+	top: 5.2rem;
+	transition: opacity 200ms ease, background 160ms ease, border-color 160ms ease;
+	width: 2.6rem;
+	z-index: 4;
+}
+
+.postcard-flip[hidden] {
+	display: none;
+}
+
+.poptrox-popup:hover .postcard-flip {
+	opacity: 0.6;
+}
+
+.postcard-flip:hover,
+.postcard-flip:focus,
+.poptrox-popup:hover .postcard-flip:hover,
+.poptrox-popup:hover .postcard-flip:focus {
+	background: rgba(242, 238, 230, 0.9);
+	border-color: rgba(242, 238, 230, 0.9);
+	color: #23201c !important;
+	opacity: 1;
+}
+
+body.touch .postcard-flip {
+	opacity: 1;
+}
+
+.poptrox-popup.is-flipped .postcard-flip {
+	background: rgba(35, 32, 28, 0.06);
+	border-color: var(--card-rule);
+	color: var(--card-ink) !important;
+	opacity: 1;
+}
+
+.poptrox-popup.is-flipped .postcard-flip:hover,
+.poptrox-popup.is-flipped .postcard-flip:focus {
+	background: var(--card-ink);
+	border-color: var(--card-ink);
+	color: var(--card-paper) !important;
+}
+
+/* The card itself */
+
+.postcard-sheet {
+	box-sizing: border-box;
+	display: grid;
+	gap: clamp(1rem, 4%, 3rem);
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+	height: 100%;
+	padding: clamp(1.2rem, 5%, 3.2rem);
+	width: 100%;
+}
+
+.postcard-sheet::before {
+	border: 1px solid rgba(35, 32, 28, 0.16);
+	bottom: 0.85rem;
+	content: '';
+	left: 0.85rem;
+	pointer-events: none;
+	position: absolute;
+	right: 0.85rem;
+	top: 0.85rem;
+}
+
+.postcard-copy {
+	align-self: center;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	min-width: 0;
+}
+
+.postcard-title {
+	color: var(--card-ink);
+	font-family: _font(family-serif);
+	font-size: clamp(1.15rem, 2.6vw, 1.9rem);
+	font-weight: 400;
+	letter-spacing: 0.01em;
+	line-height: 1.15;
+	margin: 0;
+}
+
+.postcard-kind {
+	color: var(--card-soft);
+	font-family: _font(family-serif);
+	font-size: clamp(0.72rem, 1.3vw, 0.95rem);
+	font-style: italic;
+	margin: 0.3rem 0 0;
+}
+
+.postcard-fields {
+	margin: clamp(0.9rem, 3%, 1.8rem) 0 0;
+}
+
+.postcard-field {
+	border-bottom: 1px solid var(--card-rule);
+	display: flex;
+	gap: 0.9rem;
+	justify-content: space-between;
+	padding: 0.28rem 0 0.32rem;
+}
+
+.postcard-field + .postcard-field {
+	margin-top: clamp(0.7rem, 2.4%, 1.35rem);
+}
+
+.postcard-field dt {
+	color: var(--card-soft);
+	flex: 0 0 auto;
+	font-size: 0.66rem;
+	letter-spacing: 0.19em;
+	text-transform: uppercase;
+}
+
+.postcard-field dd {
+	color: var(--card-ink);
+	font-family: _font(family-serif);
+	font-size: 0.82rem;
+	margin: 0;
+	min-height: 1.1em;
+	overflow: hidden;
+	text-align: right;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.postcard-number {
+	color: var(--card-ink);
+	font-family: _font(family-serif);
+	font-size: 0.86rem;
+	font-style: italic;
+	margin: clamp(0.8rem, 3%, 1.6rem) 0 0;
+}
+
+.postcard-swatches {
+	display: flex;
+	gap: 0.55rem;
+	list-style: none;
+	margin: 0.7rem 0 0;
+	padding: 0;
+}
+
+.postcard-swatches li {
+	border: 1px solid rgba(35, 32, 28, 0.12);
+	border-radius: 50%;
+	height: 1.55rem;
+	padding: 0;
+	width: 1.55rem;
+}
+
+.postcard-note {
+	color: var(--card-soft);
+	font-size: 0.68rem;
+	line-height: 1.5;
+	margin: 0.85rem 0 0;
+	max-width: 26ch;
+}
+
+.postcard-art {
+	align-items: center;
+	display: flex;
+	justify-content: center;
+	min-width: 0;
+}
+
+.postcard-art img {
+	display: block;
+	max-height: 100%;
+	max-width: 100%;
+	object-fit: contain;
+}
+
+.postcard-art.is-empty {
+	border: 1px dashed rgba(35, 32, 28, 0.2);
+	color: var(--card-soft);
+	font-size: 0.6rem;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+}
+
+.postcard-sheet.has-no-art {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+@media screen and (max-width: 736px) {
+	.postcard-flip {
+		height: 2.3rem;
+		right: 0.7rem;
+		top: 0.7rem;
+		width: 2.3rem;
+	}
+
+	.postcard-sheet {
+		gap: 0.8rem;
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: auto minmax(0, 1fr);
+		padding: 1rem 1.1rem;
+	}
+
+	.postcard-sheet::before {
+		bottom: 0.5rem;
+		left: 0.5rem;
+		right: 0.5rem;
+		top: 0.5rem;
+	}
+
+	.postcard-note {
+		display: none;
+	}
+
+	.thumb-postcard-flag {
+		right: 0.55rem;
+		top: 0.55rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.poptrox-popup .pic,
+	.poptrox-popup .postcard-face,
+	.postcard-flip {
+		transition: none;
+	}
+}
+
+/* Zoom (see _js/zoom.js) */
+
+/* Every gesture inside the lightbox is ours, so the browser does nothing with
+   it and the photograph zooms instead of the page. */
+.poptrox-popup {
+	touch-action: none;
+}
+
+.poptrox-popup .pic img {
+	touch-action: none;
+	transition: transform 180ms ease;
+	will-change: transform;
+}
+
+.poptrox-popup.is-zoomed .pic img {
+	cursor: grab;
+	transition: none;
+}
+
+.poptrox-popup.is-zoomed .pic img:active {
+	cursor: grabbing;
+}
+
+.poptrox-popup.is-zoomed .caption,
+.poptrox-popup.is-zoomed .nav-previous,
+.poptrox-popup.is-zoomed .nav-next {
+	opacity: 0 !important;
+	pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.poptrox-popup .pic img {
+		transition: none;
+	}
+}
