@@ -478,7 +478,7 @@
 }
 
 @media screen and (min-width: 981px) {
-	.story-photo,
+	.story-photo-strip .story-photo,
 	.story-photo-strip.is-square .story-photo,
 	.story-photo-strip.is-portrait .story-photo {
 		flex-basis: calc((100% - 2rem) / 3);
@@ -503,7 +503,7 @@
 }
 
 @media screen and (min-width: 737px) and (max-width: 980px) {
-	.story-photo,
+	.story-photo-strip .story-photo,
 	.story-photo-strip.is-square .story-photo,
 	.story-photo-strip.is-portrait .story-photo {
 		flex-basis: calc((100% - 1rem) / 2);
@@ -585,7 +585,7 @@
 		margin-right: 1rem;
 	}
 
-	.story-photo {
+	.story-photo-strip .story-photo {
 		flex-basis: 78vw;
 	}
 
@@ -598,11 +598,11 @@
 	}
 
 	.story-photo.is-photo-square {
-		flex-basis: 62vw;
+		flex-basis: 52vw;
 	}
 
 	.story-photo.is-photo-portrait {
-		flex-basis: 52vw;
+		flex-basis: 39vw;
 	}
 
 	.story-card-grid {
