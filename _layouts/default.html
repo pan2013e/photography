@@ -3,6 +3,14 @@
 {%- assign locale_meta = site.locales | where: "code", locale | first -%}
 {%- capture atlas_url %}/assets/{{ locale_meta.asset_dir }}atlas.json{% endcapture -%}
 {%- capture postcards_url %}/assets/{{ locale_meta.asset_dir }}postcards.json{% endcapture -%}
+{%- assign nav_section = nil -%}
+{%- if page.layout == 'story' or page.layout == 'stories' -%}
+    {%- assign nav_section = 'stories' -%}
+{%- elsif page.prefix == 'wild' -%}
+    {%- assign nav_section = 'wildlife' -%}
+{%- elsif page.layout == 'gallery' and page.prefix == '' -%}
+    {%- assign nav_section = 'home' -%}
+{%- endif -%}
 <!DOCTYPE HTML>
 <html
     lang="{{ locale_meta.lang }}"
@@ -23,14 +31,14 @@
                         <a href="{{ site.top_url }}" aria-label="{{ t.nav.away }}" title="{{ t.nav.away }}"><i class="fa fa-arrow-left fa-lg fa-fw" aria-hidden="true"></i></a>
                     </li>
                     <li>
-                        <a href="{{ locale_meta.prefix | append: '/' | relative_url }}" aria-label="{{ t.nav.home }}" title="{{ t.nav.home }}"><i class="fa fa-home fa-lg fa-fw" aria-hidden="true"></i></a>
+                        <a href="{{ locale_meta.prefix | append: '/' | relative_url }}" data-page-nav="home"{% if nav_section == 'home' %} class="active" aria-current="page"{% endif %} aria-label="{{ t.nav.home }}" title="{{ t.nav.home }}"><i class="fa fa-home fa-lg fa-fw" aria-hidden="true"></i></a>
                     </li>
                     {% for cat in site.category %}
                     {%- assign cat_label = t.nav[cat.key] -%}
                     {% if cat.page contains '#' %}
                     <li><a href="{{ cat.page }}" aria-label="{{ cat_label }}" title="{{ cat_label }}"><i class="fa fa-{{ cat.icon }} fa-lg fa-fw" aria-hidden="true"></i></a></li>
                     {% else %}
-                    <li><a href="{{ locale_meta.prefix | append: cat.page | relative_url }}" aria-label="{{ cat_label }}" title="{{ cat_label }}"><i class="fa fa-{{ cat.icon }} fa-lg fa-fw" aria-hidden="true"></i></a></li>
+                    <li><a href="{{ locale_meta.prefix | append: cat.page | relative_url }}"{% if cat.key == 'stories' or cat.key == 'wildlife' %} data-page-nav="{{ cat.key }}"{% endif %}{% if nav_section == cat.key %} class="active" aria-current="page"{% endif %} aria-label="{{ cat_label }}" title="{{ cat_label }}"><i class="fa fa-{{ cat.icon }} fa-lg fa-fw" aria-hidden="true"></i></a></li>
                     {% endif %}
                     {% endfor %}
                     {%- comment -%}

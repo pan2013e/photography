@@ -54,6 +54,18 @@ window.Navigation = (function () {
       );
       if (incoming) link.setAttribute('href', incoming.getAttribute('href'));
     });
+
+    const panelIsOpen = Boolean(document.querySelector('.panel.active'));
+    document.querySelectorAll('[data-page-nav]').forEach(link => {
+      const incoming = parsed.querySelector(
+        '[data-page-nav="' + link.dataset.pageNav + '"]'
+      );
+      const isCurrent = Boolean(incoming && incoming.getAttribute('aria-current') === 'page');
+
+      link.classList.toggle('active', isCurrent && !panelIsOpen);
+      if (isCurrent) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
   }
 
   function copyAttribute(current, incoming, name) {
@@ -72,7 +84,15 @@ window.Navigation = (function () {
       const incoming = incomingLinks[index];
       if (!incoming) return;
 
-      ['href', 'aria-label', 'title', 'hreflang', 'data-locale-switch'].forEach(name => {
+      [
+        'href',
+        'aria-label',
+        'aria-current',
+        'title',
+        'hreflang',
+        'data-locale-switch',
+        'data-page-nav'
+      ].forEach(name => {
         copyAttribute(link, incoming, name);
       });
       link.innerHTML = incoming.innerHTML;

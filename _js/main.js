@@ -68,8 +68,20 @@
 
         // Panels.
         var $panels = $('.panel'),
+            $pageNavigation = $('[data-page-nav]'),
             lockedScrollY = 0,
             panelMemoryKey = 'photography:open-panel';
+
+        function updatePageNavigation() {
+            var panelIsOpen = $panels.filter('.active').length > 0;
+
+            $pageNavigation.each(function () {
+                $(this).toggleClass(
+                    'active',
+                    !panelIsOpen && this.getAttribute('aria-current') === 'page'
+                );
+            });
+        }
 
         function rememberPanel($panel) {
             if (!$panel.length)
@@ -160,6 +172,7 @@
 
                     // Activate body.
                     lockPageScroll();
+                    updatePageNavigation();
 
                 })
                 .on('---hide', function () {
@@ -171,6 +184,8 @@
                     // Deactivate body when no other panel is open.
                     if (!$panels.filter('.active').length)
                         unlockPageScroll();
+
+                    updatePageNavigation();
 
                 });
 
@@ -189,6 +204,7 @@
 
         });
 
+        updatePageNavigation();
         restorePanel();
 
         // Global events.
