@@ -45,6 +45,19 @@
 		overflow: hidden;
 	}
 
+	/* At the top of a phone the bar runs up under the status bar, and glass
+	   there means the strip behind the clock is whatever photograph happens to
+	   be scrolling past, blurred: a colour that never settles, and never the
+	   one the browser has been told to paint its own furniture with. Up there
+	   the bar is solid, and it is `theme-color` exactly. */
+	@media screen and (max-width: 736px) {
+		#header {
+			-webkit-backdrop-filter: none;
+			backdrop-filter: none;
+			background-color: _palette(bg-alt) !important;
+		}
+	}
+
 	/* And the highlight itself becomes a wash rather than a slab of the old
 	   page colour, which no longer matches anything. */
 	#header nav > ul > li a.active {

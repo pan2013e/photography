@@ -243,10 +243,16 @@ or ctrl-scroll on a desktop, drag to pan. Once it is magnified a plain scroll
 moves the photograph rather than zooming it further, and it is cropped by the
 lightbox instead of spilling over the page.
 
-Under a mouse, clicking the photograph no longer closes the lightbox -- it
-cannot, or the first click of a double-click would shut it. Close with the
-cross, with Escape, or by clicking the surround. Under a finger a tap still
-closes, because at that width the cross is not on screen.
+Clicking or tapping the photograph does not close the lightbox -- it cannot,
+or the first click of a double-click would shut it before the second arrived.
+Close with the cross, which is on screen at every width for that reason, with
+Escape, or by clicking the surround.
+
+A finger gets the same gestures and one more: sideways across a photograph at
+rest asks for the next one, the way the arrows do. The pair of taps is
+recognised from the taps themselves rather than waited for as a `dblclick`,
+because Safari has been known not to send one on a page that refuses to be
+zoomed.
 
 A sideways swipe on a trackpad is how you pan, and Chrome reads the same
 gesture on a page that cannot scroll sideways as "go back". `html, body` in
@@ -260,10 +266,12 @@ by dragging or by the wheel, and a double-click changes between the two. The
 button only appears when there is more to see than the fitted view is already
 showing.
 
-On a screen taller than it is wide -- a phone held upright -- the close view
-turns the panorama a quarter turn, so that it runs down the long side of the
-screen at a size where the whole of its short edge fits across, and is read by
-scrolling down. Turning the phone turns it back.
+On a screen taller than it is wide -- a phone held upright -- both views turn
+the panorama a quarter turn, so that it runs down the long side of the screen
+rather than across the short one: whole, it is fitted to the height; close up,
+its short edge fits across and its length is read by scrolling down. Turning
+the phone turns it back. The rule is the two shapes and not the machine -- a
+panorama turns when it comes out markedly bigger that way round.
 
 A panorama does not zoom at all: fitted, it is showing everything it has, and
 close up it is magnified already. Pinch and ctrl-scroll are still refused over
@@ -271,9 +279,9 @@ it, so the gesture does not fall through and zoom the page.
 
 The popup's own buttons -- the postcard's and the panorama's -- share a rail of
 two slots, so either alone takes the first and the two together never land on
-each other. Where the slots are is decided once, in `_sass/components/_postcard
-.scss`: under the closer on a full-size photograph, in the corner where there
-is no closer to sit under, and in a row above the picture when the picture is a
+each other. Where the slots are is decided once, in
+`_sass/components/_postcard.scss`: under the closer on a full-size photograph,
+beside it on a phone, and in a row above the picture when the picture is a
 ribbon with no room inside it.
 
 ## The edges of the screen

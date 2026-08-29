@@ -115,7 +115,14 @@ the failure is understood.
 - **`skel.vars.mobile` reads the user agent, and its list of them is from
   2015.** `body.touch` is what every control that would otherwise wait to be
   hovered keys off, and a modern phone was not on the list. `main.js` asks
-  `(hover: none)` as well.
+  `(hover: none)` as well, and the stylesheet asks it directly so that nothing
+  visible depends on a script having run.
+- **A touch is captured to the element it lands on without anyone asking.**
+  Calling `setPointerCapture` for an ancestor hands it over, and the handing
+  over arrives as `lostpointercapture` on the element that had it. Read as the
+  end of the gesture it freezes every drag after one frame -- which is what
+  dragging a photograph on a phone did. A mouse has no implicit capture, so
+  this is invisible on a desktop.
 - **A rotation moves what is painted, not what is laid out.** A frame scrolls
   by what is laid out, so a turned photograph is taken out of the flow and a
   spacer left standing in its shape. The spacer sits beside the photograph and

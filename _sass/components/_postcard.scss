@@ -395,13 +395,19 @@ body.touch .postcard-flip {
 /* A panorama at its own size: the frame is the window, the photograph runs on
    past its edges. The scrollbar is hidden because it would eat a slice of a
    photograph that is already only a few hundred pixels tall -- the grab cursor
-   and the button say what the frame does instead. */
+   and the button say what the frame does instead.
+
+   A turned photograph is taken out of the flow, so the frame is what it is
+   positioned against, whole or close up (see _js/zoom.js). */
+.poptrox-popup.is-turned .pic {
+	position: relative;
+}
+
 .poptrox-popup.is-actual .pic {
 	overflow: auto;
 	/* Reaching the end of the photograph is the end of it -- the browser must
 	   not carry the swipe on into a page navigation. */
 	overscroll-behavior: contain;
-	/* What a turned photograph is positioned against (see _js/zoom.js). */
 	position: relative;
 	scrollbar-width: none;
 	-ms-overflow-style: none;
@@ -485,6 +491,19 @@ body.touch .pano-toggle {
 	opacity: 1;
 }
 
+/* A screen that cannot hover cannot be asked to. `body.touch` says as much
+   once the script has run, and said nothing at all on any browser missing from
+   a list of user agents written in 2015; the screen itself is asked here. */
+@media (hover: none) {
+	.poptrox-popup .closer,
+	.poptrox-popup .nav-previous,
+	.poptrox-popup .nav-next,
+	.poptrox-popup .postcard-flip,
+	.poptrox-popup .pano-toggle {
+		opacity: 1;
+	}
+}
+
 /* The card and a magnified photograph are both something else to look at. */
 .poptrox-popup.is-flipped .pano-toggle,
 .poptrox-popup.is-zoomed .pano-toggle {
@@ -504,8 +523,8 @@ body.touch .pano-toggle {
    popup and with what else is on screen, and they move here rather than in
    each button's own rules: only the popup knows how much room there is.
  *
- * The rail hangs under the closer on a full-size photograph, and takes the
- * corner where there is no closer to hang under. */
+ * The rail hangs under the closer where the closer is a corner of its own,
+ * and stands beside it where it is not. */
 .poptrox-popup {
 	--control-size: 2.6rem;
 	--control-top-1: 5.2rem;
@@ -530,13 +549,25 @@ body.touch .pano-toggle {
 	top: var(--control-top-2);
 }
 
+/* The closer is on screen at this width too, and takes the corner: a tap on
+   the photograph is the first half of a double tap, so it cannot also be the
+   way out. The rail starts alongside it. */
 @media screen and (max-width: 736px) {
 	.poptrox-popup {
 		--control-size: 2.3rem;
 		--control-top-1: 0.7rem;
-		--control-right-1: 0.7rem;
+		--control-right-1: 3.6rem;
 		--control-top-2: 0.7rem;
-		--control-right-2: 3.6rem;
+		--control-right-2: 6.5rem;
+	}
+
+	.poptrox-popup .closer {
+		background-size: 1.3em;
+		display: block !important;
+		height: var(--control-size);
+		right: 0.7rem;
+		top: 0.7rem;
+		width: var(--control-size);
 	}
 }
 
@@ -544,14 +575,14 @@ body.touch .pano-toggle {
    tens of pixels tall. Nothing goes inside it: the controls stand in a row
    just above it, clear of the photograph and of each other. A negative offset
    is enough -- the popup does not clip. */
-.poptrox-popup.is-panorama:not(.is-actual) {
+.poptrox-popup.is-panorama:not(.is-actual):not(.is-turned) {
 	--control-top-1: calc(-0.8rem - var(--control-size));
 	--control-top-2: calc(-0.8rem - var(--control-size));
 	--control-right-1: 4.3rem;
 	--control-right-2: 7.7rem;
 }
 
-.poptrox-popup.is-panorama:not(.is-actual) .closer {
+.poptrox-popup.is-panorama:not(.is-actual):not(.is-turned) .closer {
 	background-size: 1.5em;
 	height: var(--control-size);
 	right: 0.9rem;
@@ -563,8 +594,8 @@ body.touch .pano-toggle {
    straight through the closer -- and, being later in the markup, on top of it,
    so the cross closed nothing. They take the height they are given instead,
    and the chevron takes a share of that rather than a fixed size. */
-.poptrox-popup.is-panorama:not(.is-actual) .nav-previous,
-.poptrox-popup.is-panorama:not(.is-actual) .nav-next {
+.poptrox-popup.is-panorama:not(.is-actual):not(.is-turned) .nav-previous,
+.poptrox-popup.is-panorama:not(.is-actual):not(.is-turned) .nav-next {
 	background-size: auto 45%;
 	height: 100%;
 	margin-top: 0;
@@ -574,21 +605,21 @@ body.touch .pano-toggle {
 
 /* The caption is a band two ems deep over a gradient, which on a ribbon is the
    whole photograph. It reads underneath instead. */
-.poptrox-popup.is-panorama:not(.is-actual) .caption {
+.poptrox-popup.is-panorama:not(.is-actual):not(.is-turned) .caption {
 	background-image: none;
 	bottom: auto;
 	padding: 0.9em 0.9rem 0;
 	top: 100%;
 }
 
-/* No closer at this width, so the row starts at the corner. */
+/* The closer joins the row above the ribbon rather than the corner. */
 @media screen and (max-width: 736px) {
-	.poptrox-popup.is-panorama:not(.is-actual) {
-		--control-right-1: 0.7rem;
-		--control-right-2: 3.6rem;
+	.poptrox-popup.is-panorama:not(.is-actual):not(.is-turned) .closer {
+		right: 0.7rem;
+		top: calc(-0.8rem - var(--control-size));
 	}
 
-	.poptrox-popup.is-panorama:not(.is-actual) .caption.has-exif {
+	.poptrox-popup.is-panorama:not(.is-actual):not(.is-turned) .caption.has-exif {
 		padding: 0.7rem 0.8rem 0;
 	}
 }

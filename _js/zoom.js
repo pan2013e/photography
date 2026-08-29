@@ -1,16 +1,23 @@
 /*
- * How the photograph sits inside the lightbox: zooming, and panoramas.
+ * How the photograph sits inside the lightbox, and what a hand does to it.
  *
  * The page itself is pinned (user-scalable=no), because zooming a grid of
  * thumbnails is never what anyone wants and it makes the panels behave oddly.
- * The photograph on show is a different matter, so this recreates the gesture
- * where it belongs: pinch or double-tap on a phone, double-click or scroll
- * with a modifier on a desktop, drag to pan once magnified.
+ * The photograph on show is a different matter, so the gestures are recreated
+ * where they belong: pinch or double-tap on a phone, double-click or scroll
+ * with a modifier on a desktop, drag to pan once magnified, and sideways
+ * across a photograph at rest for the next one.
  *
  * A panorama is the one shape the lightbox cannot simply fit: a 13:1 frame
  * shown whole on a 16:9 screen is a ribbon an inch tall. Those get a second
- * way to be read -- the whole photograph, or its own pixels with the frame
- * scrolling sideways -- and a button to change between the two.
+ * way to be read -- the whole photograph, or close up with the frame scrolling
+ * -- and a button to change between the two. On a screen taller than it is
+ * wide both views are turned a quarter turn, so the panorama runs down the
+ * long side of the screen instead of across the short one.
+ *
+ * None of it closes the lightbox. Poptrox closes on any click it is given,
+ * including the first of a double-click, so clicks on the photograph are
+ * swallowed here and the cross is on screen at every width instead.
  *
  *   Zoom.attach(popup)   wire a lightbox popup
  *   Zoom.frame(popup)    the photograph has loaded: measure it and lay it out
@@ -24,6 +31,19 @@ window.Zoom = (function () {
   /* Wider than this and fitting the photograph to the screen wastes it. A 21:9
      crop (2.33) is still a photograph you can look at whole. */
   const PANORAMA = 2.5;
+
+  /* Turning a panorama a quarter turn is worth asking someone to tilt their
+     head only when it buys a good deal of size. Half as big again is the line:
+     on a phone held upright a long panorama comes out twice the size turned,
+     and a 3:1 one on a nearly square window comes out much the same either way
+     and is left alone. */
+  const TURN_GAIN = 1.5;
+
+  /* A finger. Far enough across and straight enough to be a swipe; near enough
+     and soon enough after the last one to be the second half of a double tap. */
+  const SWIPE = 45;
+  const TAP_SLOP = 30;
+  const DOUBLE_TAP = 320;
 
   /* Written by the page, in the page's language. See _includes/header.html. */
   const text = window.SiteText || {};
@@ -161,6 +181,22 @@ window.Zoom = (function () {
     view.button.setAttribute('aria-pressed', view.actual ? 'true' : 'false');
   }
 
+  /* Whether the photograph is better read a quarter turn round. A panorama on
+     a screen taller than it is wide -- a phone held upright -- is a sliver
+     across the middle whole, and a few percent at a time close up; turned, it
+     runs down the long side of the screen and is read by scrolling the way
+     everything else on a phone is read. Worth it only when it is markedly
+     bigger that way round, which is a question of the two shapes and not of
+     what kind of machine is asking. */
+  function turns(view, image, box) {
+    if (!view.panorama || !view.space) return false;
+
+    const upright = Math.min(box.width / image.naturalWidth, box.height / image.naturalHeight);
+    const turned = Math.min(box.width / image.naturalHeight, box.height / image.naturalWidth);
+
+    return turned > upright * TURN_GAIN;
+  }
+
   function display(view) {
     const image = picture(view);
     const pic = frameOf(view);
@@ -168,12 +204,7 @@ window.Zoom = (function () {
 
     const box = view.box || { width: image.clientWidth, height: image.clientHeight };
 
-    /* A panorama opened on a screen taller than it is wide -- a phone held
-       upright -- would be read a few percent at a time through a slot. Turned
-       a quarter turn it runs down the long side of the screen instead, small
-       enough for the whole of its short edge to fit across, and is read by
-       scrolling the way everything else on a phone is read. */
-    view.rotated = view.actual && Boolean(view.space) && box.height > box.width;
+    view.rotated = turns(view, image, box);
 
     /* The frame only scrolls once it is told to, and it is told in the
        stylesheet -- so the classes go on before anything is scrolled. */
@@ -181,7 +212,12 @@ window.Zoom = (function () {
     view.popup.classList.toggle('is-turned', view.rotated);
 
     if (view.rotated) {
-      const scale = Math.min(1, box.width / image.naturalHeight);
+      /* Whole, the panorama is fitted down the long side of the screen. Close
+         up, its short edge is what fits across and its length is what scrolls
+         -- never magnified past its own pixels. */
+      const scale = view.actual
+        ? Math.min(1, box.width / image.naturalHeight)
+        : Math.min(box.width / image.naturalHeight, box.height / image.naturalWidth);
       const across = Math.round(image.naturalHeight * scale);
       const along = Math.round(image.naturalWidth * scale);
 
@@ -191,7 +227,7 @@ window.Zoom = (function () {
       view.space.hidden = false;
       view.space.style.maxWidth = 'none';
       view.space.style.maxHeight = 'none';
-      view.space.style.width = across + 'px';
+      view.space.style.width = box.width + 'px';
       view.space.style.height = along + 'px';
 
       image.style.maxWidth = 'none';
@@ -199,14 +235,14 @@ window.Zoom = (function () {
       image.style.width = along + 'px';
       image.style.height = across + 'px';
       image.style.position = 'absolute';
-      image.style.left = '0';
+      image.style.left = Math.round((box.width - across) / 2) + 'px';
       image.style.top = '0';
       image.style.transformOrigin = '0 0';
       /* A quarter turn about the top left corner leaves the photograph off to
          the left; the shift brings it back over the spacer. */
       image.style.transform = 'rotate(90deg) translateY(-100%)';
 
-      pic.style.width = across + 'px';
+      pic.style.width = box.width + 'px';
       pic.style.height = Math.min(box.height, along) + 'px';
       /* A panorama is read from its left edge, which is now the top. */
       pic.scrollLeft = 0;
@@ -333,6 +369,58 @@ window.Zoom = (function () {
     return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
   }
 
+  /* What a double-click and a double-tap both mean. */
+  function magnify(view, pointX, pointY) {
+    /* On a panorama the two views are the only two things it could reasonably
+       mean, so it changes between them. */
+    if (view.panorama) {
+      toggle(view.popup);
+      return;
+    }
+
+    zoomAt(view, view.scale > 1.01 ? 1 : 2.5, pointX, pointY);
+  }
+
+  /* Safari has been known to swallow the second click of a double tap on a
+     page that refuses to be zoomed, so the pair is recognised here rather than
+     waited for. Whichever arrives first wins; `doubled` stops the other one
+     undoing it. */
+  function doubleTapped(view, event) {
+    if (event.pointerType === 'mouse' || view.multi || !view.start) return false;
+    if (Math.hypot(event.clientX - view.start.x, event.clientY - view.start.y) > TAP_SLOP)
+      return false;
+
+    const near = view.tapPoint &&
+      Math.hypot(event.clientX - view.tapPoint.x, event.clientY - view.tapPoint.y) <= TAP_SLOP;
+
+    if (near && event.timeStamp - view.tapAt <= DOUBLE_TAP) {
+      view.tapPoint = null;
+      view.doubled = event.timeStamp;
+      magnify(view, event.clientX, event.clientY);
+      return true;
+    }
+
+    view.tapAt = event.timeStamp;
+    view.tapPoint = { x: event.clientX, y: event.clientY };
+    return false;
+  }
+
+  /* A photograph at rest is not being moved, so the gesture is free to mean
+     something else -- and sideways across a photograph is how a phone is asked
+     for the next one. The arrows are poptrox's; clicking one is how the rest
+     of the lightbox asks as well. */
+  function swiped(view, event) {
+    if (view.multi || view.actual || view.scale > 1.01 || !view.start) return;
+
+    const alongX = event.clientX - view.start.x;
+    const alongY = event.clientY - view.start.y;
+
+    if (Math.abs(alongX) < SWIPE || Math.abs(alongX) < Math.abs(alongY) * 1.5) return;
+
+    const arrow = view.popup.querySelector(alongX < 0 ? '.nav-next' : '.nav-previous');
+    if (arrow) arrow.click();
+  }
+
   /* The window changing size sends poptrox back over the image to refit it,
      which wipes whatever was laid out here. Bound on the first popup, so it
      arrives after poptrox's own handler and has the last word.
@@ -361,7 +449,8 @@ window.Zoom = (function () {
 
     const view = {
       popup: popup, scale: 1, x: 0, y: 0, pointers: new Map(), pinch: 0,
-      moved: false, captured: false, dragged: false, pointerType: '',
+      moved: false, captured: false, dragged: false,
+      start: null, multi: false, tapAt: 0, tapPoint: null, doubled: 0,
       panorama: false, actual: false, rotated: false, box: null, styled: null,
       button: null, space: null
     };
@@ -410,7 +499,16 @@ window.Zoom = (function () {
 
       view.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
       view.moved = false;
-      view.pointerType = event.pointerType;
+
+      /* Where the gesture began, and whether a second finger ever joined it:
+         between them they say afterwards whether it was a tap or a swipe. */
+      if (view.pointers.size === 1) {
+        view.start = { x: event.clientX, y: event.clientY };
+        view.multi = false;
+      }
+      else {
+        view.multi = true;
+      }
 
       if (view.pointers.size === 2) view.pinch = spreadOf(view.pointers);
     });
@@ -472,22 +570,40 @@ window.Zoom = (function () {
       }
     });
 
-    /* `pointerleave` is deliberately not in this list: with the pointer held
-       it never means the drag is over, and reading it as the end was what
-       stopped a drag the moment it crossed anything. */
-    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(name => {
+    /* Only these two end a gesture.
+     *
+     * `pointerleave` does not: with the pointer held it never means the drag
+     * is over, and reading it as the end stopped a drag the moment it crossed
+     * anything.
+     *
+     * `lostpointercapture` does not either, and that one cost a finger its
+     * drag entirely. A touch is captured to the element it lands on without
+     * anyone asking; taking it for the popup a moment later hands it over,
+     * and the handing over is announced as a loss by the element that had it.
+     * Read as the end of the gesture it froze every drag after one frame --
+     * which is exactly what dragging a photograph on a phone felt like. */
+    ['pointerup', 'pointercancel'].forEach(name => {
       popup.addEventListener(name, event => {
+        const ours = view.pointers.has(event.pointerId);
+
         view.pointers.delete(event.pointerId);
         if (view.pointers.size < 2) view.pinch = 0;
         if (view.pointers.size === 0) view.captured = false;
 
+        if (!ours || name !== 'pointerup') return;
+
         /* A drag or a pinch is not a click on the photograph, and the popup
            closes on a click. The click itself is what has to be swallowed --
            stopping the pointer event does not stop the click that follows. */
-        if (view.moved && name === 'pointerup') {
+        if (view.moved) {
           view.dragged = true;
           view.moved = false;
+          view.start = null;
+          return;
         }
+
+        if (!doubleTapped(view, event)) swiped(view, event);
+        view.start = null;
       }, true);
     });
 
@@ -497,14 +613,11 @@ window.Zoom = (function () {
       event.preventDefault();
       event.stopPropagation();
 
-      /* On a panorama the two views are the only two things a double-click
-         could reasonably mean, so it changes between them. */
-      if (view.panorama) {
-        toggle(popup);
-        return;
-      }
+      /* The tap pair has already been acted on; this is the browser saying the
+         same thing again a moment later. */
+      if (event.timeStamp - view.doubled < 500) return;
 
-      zoomAt(view, view.scale > 1.01 ? 1 : 2.5, event.clientX, event.clientY);
+      magnify(view, event.clientX, event.clientY);
     });
 
     /* Anywhere inside the popup, not only over the photograph: a trackpad
@@ -570,15 +683,15 @@ window.Zoom = (function () {
 
     /* Poptrox closes the popup on any click it receives, and it receives the
        first click of a double-click too -- which is why double-clicking a
-       photograph shut the lightbox instead of magnifying it.
+       photograph shut the lightbox instead of magnifying it, and why a finger
+       could not double-tap one either.
      *
-     * The click at the end of a drag is part of the drag. And a click on the
-     * photograph itself is the beginning of looking at it, so under a mouse it
-     * is left to the double-click: there is a close button, an Escape key and
-     * the whole surround to close with. A finger has none of those -- the
-     * closer is hidden at that width -- so a tap still closes. */
+     * The click at the end of a drag is part of the drag, and a click on the
+     * photograph itself is the beginning of looking at it. Neither closes: the
+     * cross does, and so do Escape and the surround. The cross is on screen at
+     * every width for that reason. */
     popup.addEventListener('click', event => {
-      const exploring = view.pointerType === 'mouse' && event.target.closest('.pic');
+      const exploring = event.target.closest('.pic');
 
       if (!view.dragged && !exploring) return;
 
