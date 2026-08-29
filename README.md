@@ -44,6 +44,21 @@ at three sizes -- `images/fulls` (2048 px), `images/thumbs` (1024 px) and
 `images/small` (640 px). Commit; nothing else needs touching. `npm run images`
 alone backfills missing sizes for photographs that are already in `images/fulls`.
 
+**Only the prefix survives the rename.** The rest of the name -- whatever the
+camera, the phone or you called the file -- is dropped, so nothing private ends
+up in a published file name. A prefix is the run of short ASCII tags at the
+front (`cn`, `cn-sh`, `pek`, `wild`); the first part that is not one of those
+ends it. So `cn-sh-我的西藏之旅.jpg` and `cn-sh-DSC01234.JPG` both come out as
+`cn-sh-<modified-time>.jpg`. A file with no tag at the front is skipped and
+said so.
+
+A panorama is not squeezed into 2048 px. Anything wider than 2:1 is given the
+width that leaves it as tall as a 2:1 photograph would be, up to four times the
+nominal width -- so a 13:1 frame lands at 8192x608 rather than 2048x152, which
+is what the lightbox and the cropped grid cell both need. Photographs already
+in `images/fulls` were sized by the old rule; re-ingest the original to get the
+new one.
+
 Needs ImageMagick 7 on the PATH.
 
 ### Filing a Chinese photograph by province
@@ -224,4 +239,56 @@ Extensions covers audio and video streams only.
 The page itself is pinned (`user-scalable=no`), because pinching a grid of
 thumbnails is never what anyone wants. The photograph in the lightbox has its
 own zoom instead (`_js/zoom.js`): pinch or double-tap on a phone, double-click
-or ctrl-scroll on a desktop, drag to pan.
+or ctrl-scroll on a desktop, drag to pan. Once it is magnified a plain scroll
+moves the photograph rather than zooming it further, and it is cropped by the
+lightbox instead of spilling over the page.
+
+Under a mouse, clicking the photograph no longer closes the lightbox -- it
+cannot, or the first click of a double-click would shut it. Close with the
+cross, with Escape, or by clicking the surround. Under a finger a tap still
+closes, because at that width the cross is not on screen.
+
+A sideways swipe on a trackpad is how you pan, and Chrome reads the same
+gesture on a page that cannot scroll sideways as "go back". `html, body` in
+`_sass/base/_page.scss` refuse the overscroll so the gesture stays where it was
+aimed.
+
+A photograph wider than 2.5:1 is read differently, because fitting one to the
+screen leaves a ribbon an inch tall. It gets a button that changes between the
+whole photograph and a close view of it; in the close view the frame scrolls,
+by dragging or by the wheel, and a double-click changes between the two. The
+button only appears when there is more to see than the fitted view is already
+showing.
+
+On a screen taller than it is wide -- a phone held upright -- the close view
+turns the panorama a quarter turn, so that it runs down the long side of the
+screen at a size where the whole of its short edge fits across, and is read by
+scrolling down. Turning the phone turns it back.
+
+A panorama does not zoom at all: fitted, it is showing everything it has, and
+close up it is magnified already. Pinch and ctrl-scroll are still refused over
+it, so the gesture does not fall through and zoom the page.
+
+The popup's own buttons -- the postcard's and the panorama's -- share a rail of
+two slots, so either alone takes the first and the two together never land on
+each other. Where the slots are is decided once, in `_sass/components/_postcard
+.scss`: under the closer on a full-size photograph, in the corner where there
+is no closer to sit under, and in a row above the picture when the picture is a
+ribbon with no room inside it.
+
+## The edges of the screen
+
+The photographs reach them. `viewport-fit=cover` in `_includes/header.html`
+takes the page out of the letterbox a notched phone would otherwise put it in
+and lets it run under the browser's own floating address bar, which is what
+gives that bar something to be glass over. `theme-color` is the colour of the
+bar of icons, so the status bar above it is not a black stripe over a grey one.
+
+Only the bar of icons keeps clear of the insets, in `_sass/layout/_header.scss`
+-- `env(safe-area-inset-*)`, which is zero on every screen that has no notch,
+no rounded corners and no home indicator, so nothing moves anywhere else.
+
+A sideways swipe on a trackpad is how you pan a photograph, and Chrome reads
+the same gesture on a page that cannot scroll sideways as "go back".
+`overscroll-behavior-x: none` on `html, body` refuses the overscroll so the
+gesture stays where it was aimed.

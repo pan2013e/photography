@@ -28,7 +28,14 @@
             $body.addClass('ie');
 
         // Touch?
-        if (skel.vars.mobile)
+        //
+        // skel decides this from the user agent, and its list of them was
+        // written in 2015 -- an iPhone running a browser it has never heard of
+        // came out as a desktop, and every control that waits to be hovered
+        // stayed invisible on a screen that cannot hover. Ask the screen.
+        var cannotHover = window.matchMedia && window.matchMedia('(hover: none)').matches;
+
+        if (skel.vars.mobile || cannotHover)
             $body.addClass('touch');
 
         // Transitions supported?
@@ -561,6 +568,11 @@
 
             if (window.Postcards && $popup.length)
                 Postcards.show($popup[0], imageName, $popup.find('.pic img')[0]);
+
+            // Poptrox has loaded and fitted the photograph by the time it asks
+            // for a caption, which is the moment a panorama can be measured.
+            if (window.Zoom && $popup.length)
+                Zoom.frame($popup[0]);
 
             if (data === undefined) {
                 var popupImage = $popup.find('.pic img')[0];

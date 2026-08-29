@@ -110,7 +110,8 @@ body.touch .thumb-postcard-flag {
 }
 
 /* As loud as the close button and no louder: it fades in with the popup
-   chrome, and says what it does through its label rather than its size. */
+   chrome, and says what it does through its label rather than its size. Where
+   it sits is the rail's business, at the foot of this file. */
 .postcard-flip {
 	align-items: center;
 	background: rgba(16, 18, 19, 0.5);
@@ -120,16 +121,12 @@ body.touch .thumb-postcard-flag {
 	cursor: pointer;
 	display: inline-flex;
 	font-size: 0.78rem;
-	height: 2.6rem;
 	justify-content: center;
 	line-height: 1;
 	opacity: 0;
 	padding: 0;
 	position: absolute;
-	right: 0.9rem;
-	top: 5.2rem;
 	transition: opacity 200ms ease, background 160ms ease, border-color 160ms ease;
-	width: 2.6rem;
 	z-index: 4;
 }
 
@@ -313,13 +310,6 @@ body.touch .postcard-flip {
 }
 
 @media screen and (max-width: 736px) {
-	.postcard-flip {
-		height: 2.3rem;
-		right: 0.7rem;
-		top: 0.7rem;
-		width: 2.3rem;
-	}
-
 	.postcard-sheet {
 		gap: 0.8rem;
 		grid-template-columns: minmax(0, 1fr);
@@ -352,12 +342,18 @@ body.touch .postcard-flip {
 	}
 }
 
-/* Zoom (see _js/zoom.js) */
+/* The photograph inside the lightbox: zoom and panoramas (see _js/zoom.js) */
 
 /* Every gesture inside the lightbox is ours, so the browser does nothing with
    it and the photograph zooms instead of the page. */
 .poptrox-popup {
 	touch-action: none;
+}
+
+/* The frame is the frame: a magnified photograph is cropped by it rather than
+   spilling out over the page behind. */
+.poptrox-popup .pic {
+	overflow: hidden;
 }
 
 .poptrox-popup .pic img {
@@ -385,5 +381,214 @@ body.touch .postcard-flip {
 @media (prefers-reduced-motion: reduce) {
 	.poptrox-popup .pic img {
 		transition: none;
+	}
+}
+
+/* Poptrox holds every popup to a 150px floor, which is the size of its loader
+   rather than of anything in the photograph. A panorama fitted to a wide screen
+   is shorter than that, so the floor left a band of empty panel hanging under
+   it. The floor is written inline, hence the !important. */
+.poptrox-popup.is-panorama {
+	min-height: 0 !important;
+}
+
+/* A panorama at its own size: the frame is the window, the photograph runs on
+   past its edges. The scrollbar is hidden because it would eat a slice of a
+   photograph that is already only a few hundred pixels tall -- the grab cursor
+   and the button say what the frame does instead. */
+.poptrox-popup.is-actual .pic {
+	overflow: auto;
+	/* Reaching the end of the photograph is the end of it -- the browser must
+	   not carry the swipe on into a page navigation. */
+	overscroll-behavior: contain;
+	/* What a turned photograph is positioned against (see _js/zoom.js). */
+	position: relative;
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+/* Stands in for a turned photograph, which is out of the flow: a rotation
+   moves what is painted and not what is laid out, and the frame scrolls by
+   what is laid out. */
+.pano-space {
+	pointer-events: none;
+}
+
+.pano-space[hidden] {
+	display: none;
+}
+
+.poptrox-popup.is-actual .pic::-webkit-scrollbar {
+	display: none;
+}
+
+.poptrox-popup.is-actual .pic img {
+	cursor: grab;
+	display: block;
+	transition: none;
+	/* Promised to the compositor for the sake of the zoom, which cannot happen
+	   here. A panorama at its own size is several thousand pixels long, and a
+	   layer that size costs more to keep than the promise is worth. */
+	will-change: auto;
+}
+
+.poptrox-popup.is-actual .pic img:active {
+	cursor: grabbing;
+}
+
+/* The frame moves under the photograph, so the arrows would be pointing at the
+   wrong thing -- and the caption band would swallow a drag begun over it. */
+.poptrox-popup.is-actual .caption,
+.poptrox-popup.is-actual .nav-previous,
+.poptrox-popup.is-actual .nav-next {
+	opacity: 0 !important;
+	pointer-events: none;
+}
+
+.pano-toggle {
+	align-items: center;
+	background: rgba(16, 18, 19, 0.5);
+	border: 1px solid rgba(242, 238, 230, 0.3);
+	border-radius: 50%;
+	color: #f2eee6 !important;
+	cursor: pointer;
+	display: inline-flex;
+	font-size: 0.78rem;
+	justify-content: center;
+	line-height: 1;
+	opacity: 0;
+	padding: 0;
+	position: absolute;
+	transition: opacity 200ms ease, background 160ms ease, border-color 160ms ease;
+	z-index: 4;
+}
+
+.pano-toggle[hidden] {
+	display: none;
+}
+
+.poptrox-popup:hover .pano-toggle {
+	opacity: 0.6;
+}
+
+.pano-toggle:hover,
+.pano-toggle:focus,
+.poptrox-popup:hover .pano-toggle:hover,
+.poptrox-popup:hover .pano-toggle:focus {
+	background: rgba(242, 238, 230, 0.9);
+	border-color: rgba(242, 238, 230, 0.9);
+	color: #23201c !important;
+	opacity: 1;
+}
+
+body.touch .pano-toggle {
+	opacity: 1;
+}
+
+/* The card and a magnified photograph are both something else to look at. */
+.poptrox-popup.is-flipped .pano-toggle,
+.poptrox-popup.is-zoomed .pano-toggle {
+	opacity: 0 !important;
+	pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.pano-toggle {
+		transition: none;
+	}
+}
+
+/* The popup's own controls -- the postcard's and the panorama's -- take two
+   slots in a rail, so that either one alone sits in the first and the two
+   together never land on each other. The slots move with the shape of the
+   popup and with what else is on screen, and they move here rather than in
+   each button's own rules: only the popup knows how much room there is.
+ *
+ * The rail hangs under the closer on a full-size photograph, and takes the
+ * corner where there is no closer to hang under. */
+.poptrox-popup {
+	--control-size: 2.6rem;
+	--control-top-1: 5.2rem;
+	--control-right-1: 0.9rem;
+	--control-top-2: 8.6rem;
+	--control-right-2: 0.9rem;
+}
+
+.postcard-flip,
+.pano-toggle {
+	height: var(--control-size);
+	right: var(--control-right-1);
+	top: var(--control-top-1);
+	width: var(--control-size);
+}
+
+/* The panorama's button is written after the postcard's, so it is the one that
+   moves along when both are there. `[hidden]` is how each says it has nothing
+   to offer this photograph. */
+.postcard-flip:not([hidden]) ~ .pano-toggle {
+	right: var(--control-right-2);
+	top: var(--control-top-2);
+}
+
+@media screen and (max-width: 736px) {
+	.poptrox-popup {
+		--control-size: 2.3rem;
+		--control-top-1: 0.7rem;
+		--control-right-1: 0.7rem;
+		--control-top-2: 0.7rem;
+		--control-right-2: 3.6rem;
+	}
+}
+
+/* A panorama fitted to the screen is a ribbon, and on a phone a ribbon a few
+   tens of pixels tall. Nothing goes inside it: the controls stand in a row
+   just above it, clear of the photograph and of each other. A negative offset
+   is enough -- the popup does not clip. */
+.poptrox-popup.is-panorama:not(.is-actual) {
+	--control-top-1: calc(-0.8rem - var(--control-size));
+	--control-top-2: calc(-0.8rem - var(--control-size));
+	--control-right-1: 4.3rem;
+	--control-right-2: 7.7rem;
+}
+
+.poptrox-popup.is-panorama:not(.is-actual) .closer {
+	background-size: 1.5em;
+	height: var(--control-size);
+	right: 0.9rem;
+	top: calc(-0.8rem - var(--control-size));
+	width: var(--control-size);
+}
+
+/* The arrows are eight ems tall and centred, which on a ribbon put them
+   straight through the closer -- and, being later in the markup, on top of it,
+   so the cross closed nothing. They take the height they are given instead,
+   and the chevron takes a share of that rather than a fixed size. */
+.poptrox-popup.is-panorama:not(.is-actual) .nav-previous,
+.poptrox-popup.is-panorama:not(.is-actual) .nav-next {
+	background-size: auto 45%;
+	height: 100%;
+	margin-top: 0;
+	top: 0;
+	width: 4em;
+}
+
+/* The caption is a band two ems deep over a gradient, which on a ribbon is the
+   whole photograph. It reads underneath instead. */
+.poptrox-popup.is-panorama:not(.is-actual) .caption {
+	background-image: none;
+	bottom: auto;
+	padding: 0.9em 0.9rem 0;
+	top: 100%;
+}
+
+/* No closer at this width, so the row starts at the corner. */
+@media screen and (max-width: 736px) {
+	.poptrox-popup.is-panorama:not(.is-actual) {
+		--control-right-1: 0.7rem;
+		--control-right-2: 3.6rem;
+	}
+
+	.poptrox-popup.is-panorama:not(.is-actual) .caption.has-exif {
+		padding: 0.7rem 0.8rem 0;
 	}
 }

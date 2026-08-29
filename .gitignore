@@ -76,3 +76,9 @@ jspm_packages
 .node_repl_history
 
 /Gemfile.lock
+
+# Coding-agent scratch: settings, session state, launch configs. None of it
+# describes the album, and it differs from one machine to the next.
+.claude/
+.cursor/
+.aider*

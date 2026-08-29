@@ -25,6 +25,12 @@
 			display: block;
 			height: 100%;
 			left: 0;
+			/* It is a wash over the photograph and nothing more. Left to take
+			   events it covers the whole picture, and every one of them arrives
+			   reported against the popup instead -- which is why dragging a
+			   zoomed photograph did nothing on a desktop and worked on a phone,
+			   where this is display: none. */
+			pointer-events: none;
 			position: absolute;
 			top: 0;
 			width: 100%;

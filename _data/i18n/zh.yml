@@ -143,3 +143,6 @@ js:
   postcard_camera: 相机
   postcard_number: "No. {number}"
   postcard_error: 无法载入明信片。
+
+  panorama_actual: 放大查看全景照片
+  panorama_fit: 缩放至完整显示全景照片

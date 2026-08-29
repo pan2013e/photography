@@ -6,8 +6,13 @@
 
 /* Header */
 
+	// The page is drawn to the edges of the screen (`viewport-fit=cover` in
+	// _includes/header.html), which is what a photograph wants and a row of
+	// controls does not: the bar keeps clear of the rounded corners, the
+	// notch and the home indicator by the insets the browser reports. They
+	// are zero everywhere that has none.
 	body {
-		padding: 0 0 _size(header) 0;
+		padding: 0 0 calc(#{_size(header)} + env(safe-area-inset-bottom)) 0;
 	}
 
 	#header {
@@ -18,10 +23,10 @@
 		-webkit-user-select: none;
 		background: _palette(bg-alt);
 		bottom: -1em;
-		height: _size(header) + 1em;
+		height: calc(#{_size(header) + 1em} + env(safe-area-inset-bottom));
 		left: 0;
 		line-height: _size(header);
-		padding: 0 1.5em;
+		padding: 0 calc(1.5em + env(safe-area-inset-right)) env(safe-area-inset-bottom) calc(1.5em + env(safe-area-inset-left));
 		position: fixed;
 		user-select: none;
 		width: 100%;
@@ -95,14 +100,16 @@
 
 	@include breakpoint(small) {
 		body {
-			padding: _size(header) 0 0 0;
+			padding: calc(#{_size(header)} + env(safe-area-inset-top)) 0 0 0;
 		}
 
+		// At the top of the screen the bar is under the status bar instead, so
+		// it grows upward and its colour carries all the way to the top edge.
 		#header {
 			@include vendor('transform', 'translateY(0)');
 			bottom: auto;
-			height: _size(header);
-			padding: 0 1em;
+			height: calc(#{_size(header)} + env(safe-area-inset-top));
+			padding: env(safe-area-inset-top) calc(1em + env(safe-area-inset-right)) 0 calc(1em + env(safe-area-inset-left));
 			top: 0;
 
 			body.loading & {

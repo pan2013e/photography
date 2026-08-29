@@ -98,7 +98,34 @@ the failure is understood.
   `display: flex`, so `element.hidden = true` leaves them on screen unless the
   stylesheet also says `[hidden] { display: none }`.
 - **Poptrox closes the lightbox on any click it receives.** Anything
-  interactive added inside a popup must call `stopPropagation`.
+  interactive added inside a popup must call `stopPropagation`. It closes on
+  the *first* click of a double-click too, which is why `_js/zoom.js` swallows
+  a mouse click on the photograph itself.
+- **`.poptrox-popup:before` covers the whole photograph.** It is a decorative
+  wash at `z-index: 1`, and while it took pointer events every one of them
+  arrived reported against the popup rather than the picture -- so a handler
+  asking `event.target.closest('.pic')` never fired. It is
+  `pointer-events: none` for that reason. The same trap is waiting in any
+  full-size overlay added to a popup.
+- **Stopping `pointerup` does not stop the click.** A drag inside a popup has
+  to swallow the `click` that follows it, or poptrox closes the lightbox at the
+  end of every drag. A drag by a finger is followed by no click at all, so
+  whatever is set aside to be swallowed has to be cleared on the next press or
+  it eats the tap after it.
+- **`skel.vars.mobile` reads the user agent, and its list of them is from
+  2015.** `body.touch` is what every control that would otherwise wait to be
+  hovered keys off, and a modern phone was not on the list. `main.js` asks
+  `(hover: none)` as well.
+- **A rotation moves what is painted, not what is laid out.** A frame scrolls
+  by what is laid out, so a turned photograph is taken out of the flow and a
+  spacer left standing in its shape. The spacer sits beside the photograph and
+  not around it: poptrox takes the photograph in and out of `.pic` as you walk
+  through a gallery, and would not know to look inside a wrapper.
+- **A refused `poptrox_switch` still reaches your handler.** Poptrox ignores
+  the arrows while the popup is still moving by returning early from its own
+  listener, which does not stop the event -- so the site's handler runs and
+  resets a photograph that never changed. Anything undone there has to be put
+  back rather than simply dropped, because nothing reloads to set it again.
 - **`user-scalable=no` does not stop pinch-zoom.** iOS Safari has ignored it
   since iOS 10, and a trackpad pinch on Windows arrives as ctrl+wheel. See
   `_js/zoom.js` for what actually works.

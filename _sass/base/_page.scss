@@ -16,6 +16,15 @@
 			-ms-overflow-style: scrollbar;
 		}
 
+	// A two-finger sideways swipe on a trackpad is how you pan a photograph in
+	// the lightbox, and on a page that cannot scroll sideways the browser reads
+	// the same gesture as "go back". Refusing the overscroll keeps the gesture
+	// where it was aimed. Nothing on the album scrolls sideways at the page
+	// level, so nothing is lost.
+		html, body {
+			overscroll-behavior-x: none;
+		}
+
 	// Ensures page width is always >=320px.
 		@include breakpoint(xsmall) {
 			html, body {

@@ -155,3 +155,6 @@ js:
   postcard_camera: Camera
   postcard_number: "No. {number}"
   postcard_error: Could not load postcards.
+
+  panorama_actual: Open the panorama up close
+  panorama_fit: Fit the whole panorama on screen
