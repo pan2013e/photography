@@ -99,12 +99,14 @@ body.touch .thumb-postcard-flag {
 	overflow: hidden;
 	/* The rail of buttons is given a lane of its own rather than being laid
 	   over the card: a postcard is small enough already without a stamp box
-	   with a button on it. The lane is padding, and a size container measures
-	   its content box, so the card is fitted to what is left without being
-	   told about it. The far side is padded to match, or the card would sit
-	   off to one side of the popup it was opened from. */
-	padding-left: max(0px, calc(var(--control-right-1) + var(--control-size) + 0.3rem));
-	padding-right: max(0px, calc(var(--control-right-1) + var(--control-size) + 0.3rem));
+	   with a button on it. While the card is showing the rail lies along the
+	   top edge (see the foot of this file), so the lane is above the card --
+	   and repeated below it, or the card would sit low in the popup it was
+	   opened from. The lane is padding, and a size container measures its
+	   content box, so the card is fitted to what is left without being told
+	   about it. */
+	padding-bottom: 3.2rem;
+	padding-top: 3.2rem;
 	position: absolute;
 	right: 0;
 	top: 0;
@@ -124,25 +126,35 @@ body.touch .thumb-postcard-flag {
 	transform: rotateY(360deg);
 }
 
+/* The arrows are held open on a touch screen by a rule that outranks a plain
+   `.is-flipped`, so it is named here: a card is something else to look at, and
+   the way on from it is back to the photograph. */
 .poptrox-popup.is-flipped:before,
 .poptrox-popup.is-flipped .caption,
 .poptrox-popup.is-flipped .nav-previous,
-.poptrox-popup.is-flipped .nav-next {
+.poptrox-popup.is-flipped .nav-next,
+body.touch .poptrox-popup.is-flipped .nav-previous,
+body.touch .poptrox-popup.is-flipped .nav-next {
 	opacity: 0 !important;
 	pointer-events: none;
 }
 
-/* The closer is painted over the card, so it has to be inverted -- or it is a
-   white cross on cream. */
-.poptrox-popup.is-flipped .closer {
-	-webkit-filter: invert(1);
-	filter: invert(1);
-	opacity: 0.45;
-	z-index: 5;
+/* The popup's own panel is a mount for a photograph. A card is not mounted on
+   anything -- it lies on the page with its own shadow -- so the panel goes
+   while the card is showing, and what is behind the card is the darkened
+   gallery. */
+.poptrox-popup.is-flipped {
+	background: none;
+	box-shadow: none;
 }
 
-.poptrox-popup.is-flipped:hover .closer {
+/* The card stands in the middle of the popup with the controls beside it, so
+   the closer keeps the light it has over a photograph: the ground behind it is
+   the lightbox, not cream. It is held above the card, which is painted over
+   the popup's own furniture. */
+.poptrox-popup.is-flipped .closer {
 	opacity: 0.75;
+	z-index: 5;
 }
 
 .poptrox-popup.is-flipped .closer:hover {
@@ -255,22 +267,13 @@ body.touch .postcard-export {
 	opacity: 1;
 }
 
-/* Over the card they are dark on cream rather than light on a photograph. */
+/* Reading the card is not a moment to go looking for the way out of it, so
+   both buttons stay up while it is showing. They keep their own colours: they
+   stand beside the card rather than on it, and what is behind them is the
+   lightbox. */
 .poptrox-popup.is-flipped .postcard-flip,
 .poptrox-popup.is-flipped .postcard-export {
-	background: rgba(35, 32, 28, 0.06);
-	border-color: var(--card-rule);
-	color: var(--card-ink) !important;
-	opacity: 1;
-}
-
-.poptrox-popup.is-flipped .postcard-flip:hover,
-.poptrox-popup.is-flipped .postcard-flip:focus,
-.poptrox-popup.is-flipped .postcard-export:hover,
-.poptrox-popup.is-flipped .postcard-export:focus {
-	background: var(--card-ink);
-	border-color: var(--card-ink);
-	color: var(--card-paper) !important;
+	opacity: 0.85;
 }
 
 /* Writing a PDF takes a moment on a phone. The button says so by turning, and
@@ -287,13 +290,6 @@ body.touch .postcard-export {
 /* At this width the rail lies across the top beside the closer rather than
    down the side, so the lane it needs is above the card and not next to it. */
 @media screen and (max-width: 736px) {
-	.poptrox-popup .postcard-face {
-		padding-bottom: max(0px, calc(var(--control-top-1) + var(--control-size) + 0.3rem));
-		padding-left: 0;
-		padding-right: 0;
-		padding-top: max(0px, calc(var(--control-top-1) + var(--control-size) + 0.3rem));
-	}
-
 	.thumb-postcard-flag {
 		right: 0.55rem;
 		top: 0.55rem;
@@ -511,6 +507,18 @@ body.touch .pano-toggle {
 .postcard-flip:not([hidden]) ~ .pano-toggle {
 	right: var(--control-right-2);
 	top: var(--control-top-2);
+}
+
+/* While the card is showing, the rail lies along the top edge in the lane the
+   face keeps clear, running leftwards from the closer in the corner. A card is
+   as wide as a card is: there is room to spare above it far more often than
+   beside it. */
+.poptrox-popup.is-flipped {
+	--control-size: 2.4rem;
+	--control-top-1: 0.5rem;
+	--control-right-1: 3.4rem;
+	--control-top-2: 0.5rem;
+	--control-right-2: 6.3rem;
 }
 
 /* The closer is on screen at this width too, and takes the corner: a tap on

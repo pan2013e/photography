@@ -58,24 +58,82 @@ window.Pdf = (function () {
     return String(rounded === 0 ? 0 : rounded);
   }
 
-  /* ( ) and \ are the only characters a literal string has to escape. */
+  /* Every string in the file is written down once, here, and put into the page
+     as a mark standing for it. A protected document encrypts each of them on
+     the way out, and it can only do that if it knows where they all are -- a
+     string is otherwise indistinguishable from the parentheses around it once
+     it has been spliced into a dictionary. */
+  /* A mark is one byte no PDF syntax uses, so a dictionary can be spliced
+     together as text and the strings inside it still be found again. */
+  const MARK = String.fromCharCode(1);
+  const MARKS = new RegExp(MARK + '(\\d+)' + MARK, 'g');
+  let strings = [];
+
+  function mark(bytes) {
+    strings.push(bytes);
+    return MARK + (strings.length - 1) + MARK;
+  }
+
+  function latin1(text) {
+    const value = String(text);
+    const out = new Uint8Array(value.length);
+    for (let index = 0; index < value.length; index++) out[index] = value.charCodeAt(index) & 0xff;
+    return out;
+  }
+
   function literal(text) {
-    return '(' + String(text).replace(/([\\()])/g, '\\$1') + ')';
+    return mark(latin1(text));
   }
 
   /* Anything that is not plain ASCII goes in as UTF-16, which is the only
      encoding a PDF string can carry every language in. */
   function textString(text) {
     const value = String(text);
-    if (/^[\x20-\x7e]*$/.test(value)) return literal(value);
+    if (/^[\x20-\x7e]*$/.test(value)) return mark(latin1(value));
 
-    let out = '\\376\\377';
+    const out = new Uint8Array(2 + value.length * 2);
+    out[0] = 0xfe;
+    out[1] = 0xff;
     for (let index = 0; index < value.length; index++) {
       const code = value.charCodeAt(index);
-      out += '\\' + ((code >> 8) & 0xff).toString(8).padStart(3, '0');
-      out += '\\' + (code & 0xff).toString(8).padStart(3, '0');
+      out[2 + index * 2] = (code >> 8) & 0xff;
+      out[3 + index * 2] = code & 0xff;
     }
-    return '(' + out + ')';
+    return mark(out);
+  }
+
+  /* ( ) and \ are the only characters a literal string has to escape; every
+     other byte a postcard carries is written in octal, so that none of it can
+     be mistaken for punctuation. */
+  function escapeBytes(bytes) {
+    let out = '';
+    for (let index = 0; index < bytes.length; index++) {
+      const byte = bytes[index];
+      if (byte === 0x5c || byte === 0x28 || byte === 0x29) out += '\\' + String.fromCharCode(byte);
+      else if (byte < 32 || byte > 126) out += '\\' + byte.toString(8).padStart(3, '0');
+      else out += String.fromCharCode(byte);
+    }
+    return out;
+  }
+
+  /* For the entries in the encryption dictionary, which are the one part of a
+     protected file that is never itself encrypted. */
+  function hexString(bytes) {
+    let out = '<';
+    for (let index = 0; index < bytes.length; index++) {
+      out += bytes[index].toString(16).padStart(2, '0');
+    }
+    return out + '>';
+  }
+
+  function joinBytes(parts) {
+    let length = 0;
+    parts.forEach(part => { length += part.length; });
+
+    const out = new Uint8Array(length);
+    let at = 0;
+    parts.forEach(part => { out.set(part, at); at += part.length; });
+    return out;
   }
 
   function name(text) {
@@ -450,6 +508,7 @@ window.Pdf = (function () {
   /* --------------------------------------------------------------- writer */
 
   function Document(options) {
+    strings = [];
     this.width = options.width;
     this.height = options.height;
     this.objects = [null];
@@ -656,7 +715,11 @@ window.Pdf = (function () {
     });
   }
 
-  Document.prototype.save = function () {
+  /* The finished bytes, as a promise: a protected card has to wait on the
+     browser's own cipher. `options.protect` asks for that protection, and is
+     quietly dropped where a browser will not do the arithmetic -- a card
+     nobody can print is worse than one they could edit. */
+  Document.prototype.save = function (options) {
     const pageWidth = this.width * MM;
     const pageHeight = this.height * MM;
 
@@ -709,7 +772,7 @@ window.Pdf = (function () {
          to the mask in any case. A viewer that does not know them leaves a
          plain text field, already filled in. */
       if (field.format) {
-        const mask = literal('"' + field.format + '"').slice(1, -1);
+        const mask = escapeBytes(latin1('"' + field.format + '"'));
         dictionary.AA = '<< /F << /S /JavaScript /JS ' +
           literal('AFDate_FormatEx(' + mask + ');') + ' >> /K << /S /JavaScript /JS ' +
           literal('AFDate_KeystrokeEx(' + mask + ');') + ' >> >>';
@@ -781,8 +844,163 @@ window.Pdf = (function () {
       Producer: textString(this.info.creator || '')
     });
 
-    return assemble(this.objects, catalogueId, infoId);
+    if (!options || !options.protect || !CRYPTO) {
+      return write(this.objects, catalogueId, infoId, null);
+    }
+
+    const objects = this.objects;
+    return protection().then(guard => {
+      guard.encryptId = objects.length;
+      objects.push(guard.dictionary);
+      return write(objects, catalogueId, infoId, guard);
+    });
   };
+
+  /* --------------------------------------------------------- protection */
+
+  /* What a reader may do with the card: look at it, print it at full
+     resolution, and fill in the form. Bits, counting from one: 3 print, 9 fill
+     in form fields, 10 read out for accessibility, 12 print without being
+     stepped down to a draft. Changing the card, copying out of it, annotating
+     it and taking it apart are all refused. Bits 7 and 8 and everything from
+     13 up are reserved and set; bits 1 and 2 are reserved and clear.
+
+     0xFFFFFBC4, as the signed 32-bit integer a PDF writes it as. */
+  const PERMISSIONS = -1084;
+
+  const CRYPTO = typeof window !== 'undefined' && window.crypto && window.crypto.subtle
+    ? window.crypto : null;
+
+  function randomBytes(count) {
+    const out = new Uint8Array(count);
+    CRYPTO.getRandomValues(out);
+    return out;
+  }
+
+  function digest(bits, data) {
+    return CRYPTO.subtle.digest('SHA-' + bits, data).then(out => new Uint8Array(out));
+  }
+
+  function cipher(keyBytes, iv, data) {
+    return CRYPTO.subtle
+      .importKey('raw', keyBytes, { name: 'AES-CBC' }, false, ['encrypt'])
+      .then(key => CRYPTO.subtle.encrypt({ name: 'AES-CBC', iv: iv }, key, data))
+      .then(out => new Uint8Array(out));
+  }
+
+  /* PDF asks for CBC with no padding in several places. A browser will only
+     pad, so the block it adds is cut back off. */
+  function cipherExactly(keyBytes, iv, data) {
+    return cipher(keyBytes, iv, data).then(out => out.subarray(0, out.length - 16));
+  }
+
+  const NO_IV = new Uint8Array(16);
+
+  /* Algorithm 2.B: the hardened hash a PDF 2.0 file is keyed with. It is
+     deliberately slow -- sixty-four rounds at least, and more until a round
+     ends on a small enough byte. */
+  function hardenedHash(password, salt, extra) {
+    const step = key => {
+      const block = joinBytes([password, key, extra]);
+      const repeated = new Uint8Array(block.length * 64);
+      for (let index = 0; index < 64; index++) repeated.set(block, index * block.length);
+
+      return cipherExactly(key.subarray(0, 16), key.subarray(16, 32), repeated).then(E => {
+        let sum = 0;
+        for (let index = 0; index < 16; index++) sum += E[index];
+
+        const which = sum % 3;
+        return digest(which === 0 ? 256 : which === 1 ? 384 : 512, E).then(hashed => {
+          step.round += 1;
+          if (step.round >= 64 && E[E.length - 1] <= step.round - 32) return hashed.subarray(0, 32);
+          return step(hashed);
+        });
+      });
+    };
+
+    step.round = 0;
+    return digest(256, joinBytes([password, salt, extra])).then(step);
+  }
+
+  /* The standard security handler at its strongest: AES-256, revision 6. The
+     user password is empty, so the card opens for anyone; the owner password
+     is thirty-two random bytes, used once and never written down, so nobody --
+     whoever made the card included -- can lift the restrictions afterwards. */
+  function protection() {
+    const fileKey = randomBytes(32);
+    const owner = randomBytes(32);
+    const user = new Uint8Array(0);
+    const empty = new Uint8Array(0);
+
+    const userValidation = randomBytes(8);
+    const userKey = randomBytes(8);
+    const ownerValidation = randomBytes(8);
+    const ownerKey = randomBytes(8);
+
+    const sealed = {};
+    let U;
+
+    return hardenedHash(user, userValidation, empty)
+      .then(hash => {
+        U = joinBytes([hash, userValidation, userKey]);
+        return hardenedHash(user, userKey, empty);
+      })
+      .then(intermediate => cipherExactly(intermediate, NO_IV, fileKey))
+      .then(UE => {
+        sealed.UE = UE;
+        return hardenedHash(owner, ownerValidation, U);
+      })
+      .then(hash => {
+        sealed.O = joinBytes([hash, ownerValidation, ownerKey]);
+        return hardenedHash(owner, ownerKey, U);
+      })
+      .then(intermediate => cipherExactly(intermediate, NO_IV, fileKey))
+      .then(OE => {
+        sealed.OE = OE;
+
+        /* The permissions are repeated inside the file, enciphered, so that a
+           reader can tell they have not been edited on the way. */
+        const perms = new Uint8Array(16);
+        new DataView(perms.buffer).setInt32(0, PERMISSIONS, true);
+        perms[4] = perms[5] = perms[6] = perms[7] = 0xff;
+        perms[8] = 0x54;
+        perms[9] = 0x61;
+        perms[10] = 0x64;
+        perms[11] = 0x62;
+        perms.set(randomBytes(4), 12);
+
+        return cipher(fileKey, NO_IV, perms);
+      })
+      .then(out => ({
+        key: fileKey,
+        id: randomBytes(16),
+        dictionary: {
+          Filter: '/Standard',
+          V: 5,
+          R: 6,
+          Length: 256,
+          CF: '<< /StdCF << /CFM /AESV3 /Length 32 /AuthEvent /DocOpen >> >>',
+          StmF: '/StdCF',
+          StrF: '/StdCF',
+          O: hexString(sealed.O),
+          U: hexString(U),
+          OE: hexString(sealed.OE),
+          UE: hexString(sealed.UE),
+          Perms: hexString(out.subarray(0, 16)),
+          P: PERMISSIONS,
+          EncryptMetadata: 'true'
+        }
+      }));
+  }
+
+  /* Every string and every stream is enciphered with the file key, each under
+     an initialisation vector of its own, written in front of it. */
+  function encipher(key, data) {
+    const iv = randomBytes(16);
+    return cipher(key, iv, data).then(body => joinBytes([iv, body]));
+  }
+
+  /* ------------------------------------------------------------ assembly */
 
   function dictionaryOf(entries) {
     const parts = Object.keys(entries).map(key => name(key) + ' ' + entries[key]);
@@ -797,7 +1015,13 @@ window.Pdf = (function () {
     return { head: dictionaryOf(object), stream: null, tail: '' };
   }
 
-  function assemble(objects, catalogueId, infoId) {
+  /* The marks left by `mark` are traded back for the strings they stand for,
+     enciphered or not, on the way into the file. */
+  function withStrings(text, written) {
+    return text.replace(MARKS, (match, index) => written[Number(index)]);
+  }
+
+  function assemble(objects, catalogueId, infoId, guard, written) {
     const chunks = [];
     const offsets = [0];
     let at = 0;
@@ -813,7 +1037,7 @@ window.Pdf = (function () {
     for (let id = 1; id < objects.length; id++) {
       offsets[id] = at;
       const body = bodyOf(objects[id]);
-      push(id + ' 0 obj\n' + body.head);
+      push(withStrings(id + ' 0 obj\n' + body.head, written));
       if (body.stream) push(body.stream);
       push(body.tail + '\nendobj\n');
     }
@@ -824,13 +1048,49 @@ window.Pdf = (function () {
       xref += String(offsets[id]).padStart(10, '0') + ' 00000 n \n';
     }
     push(xref);
-    push('trailer\n' + dictionaryOf({
+
+    const trailer = {
       Size: objects.length,
       Root: catalogueId + ' 0 R',
       Info: infoId + ' 0 R'
-    }) + '\nstartxref\n' + xrefAt + '\n%%EOF\n');
+    };
+    if (guard) {
+      trailer.Encrypt = guard.encryptId + ' 0 R';
+      trailer.ID = '[' + hexString(guard.id) + ' ' + hexString(guard.id) + ']';
+    }
+
+    push('trailer\n' + dictionaryOf(trailer) + '\nstartxref\n' + xrefAt + '\n%%EOF\n');
 
     return concat(chunks);
+  }
+
+  /* Written out plainly, every string is simply escaped. Written out under
+     protection, each is enciphered first -- and so is every stream, in place,
+     because what the file records as its length is the length of the
+     ciphertext. */
+  function write(objects, catalogueId, infoId, guard) {
+    if (!guard) {
+      return Promise.resolve(assemble(objects, catalogueId, infoId, null,
+        strings.map(raw => '(' + escapeBytes(raw) + ')')));
+    }
+
+    const written = [];
+    let work = Promise.resolve();
+
+    strings.forEach((raw, index) => {
+      work = work
+        .then(() => encipher(guard.key, raw))
+        .then(sealed => { written[index] = '(' + escapeBytes(sealed) + ')'; });
+    });
+
+    objects.forEach(object => {
+      if (!object || !object.stream) return;
+      work = work
+        .then(() => encipher(guard.key, object.stream))
+        .then(sealed => { object.stream = sealed; });
+    });
+
+    return work.then(() => assemble(objects, catalogueId, infoId, guard, written));
   }
 
   return {

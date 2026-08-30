@@ -69,7 +69,8 @@ Breaking any of these breaks the site quietly, which is worse than loudly.
     _data/postcards.yml   the only hand-written list in the repository
     _js/                  site scripts + vendor; bundled into site.min.js
     _js/postcard.js       the postcard: one layout, drawn as SVG and as PDF
-    _js/pdf.js            a PDF writer, and enough TrueType to draw with
+    _js/pdf.js            a PDF writer, enough TrueType to draw with, and the
+                          encryption that keeps a saved card read-only
     _sass/                styles; built into main.min.css
     _tools/               images.js (sizes, ingest), bundle.js (scripts)
     assets/               only what is served

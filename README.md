@@ -196,6 +196,14 @@ date starts at today and is formatted through `postcard_date_format` in
 `_data/i18n/<locale>.yml`, which is also the mask a reader such as Acrobat uses
 to offer its date picker.
 
+The file is protected with the strongest security a PDF has -- AES-256 -- so
+that a reader can look at the card, print it at full resolution and fill in the
+form, and nothing else: no editing, no copying out of it, no annotating, no
+taking it apart. It opens without asking for anything, because the user
+password is empty; the owner password that would lift the restrictions is
+thirty-two random bytes, generated in the browser, used once and never written
+down or shown to anyone.
+
 Chinese has no font small enough to embed, so a line the Latin face cannot set
 is drawn by the browser at print resolution and placed as a picture. It is
 still not text anyone can edit. Typing into the form fields is Latin only.

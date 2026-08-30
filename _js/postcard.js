@@ -583,7 +583,10 @@ window.Postcards = (function () {
         }
       });
 
-      return doc.save();
+      /* Saved under the strongest protection a PDF has: the card can be
+         read, printed and filled in, and nothing else. The owner password is
+         random and is thrown away unseen. */
+      return doc.save({ protect: true });
     });
   }
 
