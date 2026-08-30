@@ -150,11 +150,28 @@ js:
   photograph: Photograph
   show_postcard: Show the postcard
   show_photograph: Show the photograph
-  postcard_location: Location
-  postcard_date: Date
-  postcard_camera: Camera
-  postcard_number: "No. {number}"
   postcard_error: Could not load postcards.
+
+  # Printed on the card itself. They are set small and letterspaced, so they
+  # read best in two or three words.
+  postcard_stamp: Affix stamp here
+  postcard_to: Addressee
+  postcard_date: Date
+  # The mask a PDF reader formats the card's date field to. d, dd, m, mm,
+  # mmm, mmmm, yy and yyyy; month names come from the reader's own language,
+  # so a language that does not name its months should ask for numbers.
+  postcard_date_format: d mmmm yyyy
+  postcard_postcode: Postcode
+  postcard_from: Sender
+  postcard_rights: "Photograph © {year} {author}"
+  postcard_rights_undated: "Photograph © {author}"
+
+  # The button that writes the card out as an A6 PDF, and what it says while
+  # it works.
+  postcard_export: Save the postcard as a PDF
+  postcard_exporting: Preparing the PDF
+  postcard_export_error: The PDF could not be written.
+  postcard_export_name: postcard
 
   panorama_actual: Open the panorama up close
   panorama_fit: Fit the whole panorama on screen

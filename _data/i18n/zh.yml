@@ -138,11 +138,21 @@ js:
   photograph: 照片
   show_postcard: 翻到明信片
   show_photograph: 翻回照片
-  postcard_location: 地点
-  postcard_date: 日期
-  postcard_camera: 相机
-  postcard_number: "No. {number}"
   postcard_error: 无法载入明信片。
+
+  postcard_stamp: 贴邮票处
+  postcard_to: 收件人
+  postcard_date: 日期
+  postcard_date_format: yyyy-mm-dd
+  postcard_postcode: 邮政编码
+  postcard_from: 寄件人
+  postcard_rights: "照片版权所有 © {year} {author}"
+  postcard_rights_undated: "照片版权所有 © {author}"
+
+  postcard_export: 保存明信片 PDF
+  postcard_exporting: 正在生成 PDF
+  postcard_export_error: PDF 生成失败。
+  postcard_export_name: 明信片
 
   panorama_actual: 放大查看全景照片
   panorama_fit: 缩放至完整显示全景照片

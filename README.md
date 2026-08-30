@@ -150,23 +150,59 @@ from that.
 ## Postcards
 
 A photograph listed in `_data/postcards.yml` gets an envelope mark on its
-thumbnail and a flip button in the lightbox that turns it over. The
-file name alone is enough:
+thumbnail and a flip button in the lightbox that turns it over. The file name
+alone is enough:
 
 ```yaml
 - cn-sh-1731339471080.jpg
 ```
 
-The card fills itself in: the date and camera come from the photograph's EXIF,
-the location from where it is filed, the number from its position in the list,
-and the swatches are sampled from the photograph in the browser. Whatever
-cannot be worked out is left off the card rather than printed blank. Override
-anything by writing a record instead of a bare name -- every field is
-documented at the top of `_data/postcards.yml`.
+The back is a postcard -- A6, 148 by 105 mm, laid out the way China Post lays
+one out. Six red boxes for the recipient's postcode across the top, the stamp
+at the right of them, the message and the drawing down the left of the divider,
+the address down the right, and the sender's lines under a gap below it.
 
-Drawings are optional. They live in `images/postcards/`, are referenced with
-`illustration:`, and are not resized by `npm run images`; export them at about
-1200 px on the long edge, transparent PNG or SVG.
+The card fills itself in: the place from where the photograph is filed, the
+date from its EXIF, the drawing from `images/postcards/`, and the colour
+swatches sampled from the photograph in the browser. Whatever cannot be worked
+out is left off rather than printed blank. The one thing worth writing by hand
+is `note:` -- a sentence printed on the message side. Every field is documented
+at the top of `_data/postcards.yml`, at length, so that file can be handed to
+someone (or something) with no other context.
+
+### Drawings
+
+A drawing is found by the photograph's own name: `images/postcards/` plus the
+photograph's file name with a picture extension, so
+`cn-sh-1731339471080.jpg` finds `cn-sh-1731339471080.png`. Nothing has to be
+written down. `illustration:` names a different file, and `illustration: ""`
+leaves the card without one.
+
+Drawings are not resized by `npm run images`. Export them at about 1200 px on
+the long edge, transparent PNG or SVG. The card is laid out around whatever
+shape the drawing is -- it is never cropped or stretched -- so a squarer
+drawing simply takes more of the column and leaves fewer lines to write on.
+
+### Saving one to print
+
+The card has a second button, which writes it out as a PDF at A6 and downloads
+it. Everything happens in the reader's browser; there is no service behind it.
+
+Printed text is written as outlines taken from the font's own glyphs, so the
+card cannot be edited and does not depend on the printer having the face. The
+postcode, the date, the address and the message are real form fields with the
+same face embedded, so a card can be addressed on screen and then printed. The
+date starts at today and is formatted through `postcard_date_format` in
+`_data/i18n/<locale>.yml`, which is also the mask a reader such as Acrobat uses
+to offer its date picker.
+
+Chinese has no font small enough to embed, so a line the Latin face cannot set
+is drawn by the browser at print resolution and placed as a picture. It is
+still not text anyone can edit. Typing into the form fields is Latin only.
+
+The card is set in EB Garamond (SIL Open Font License 1.1; the licence is in
+`assets/fonts/`). The page loads the Latin cut as woff2; the `.ttf` beside it
+is fetched only when someone asks for a PDF.
 
 ## Layout
 
@@ -175,6 +211,8 @@ Drawings are optional. They live in `images/postcards/`, are referenced with
     _plugins/atlas.rb     galleries, index, stories, atlas.json, postcards.json
     _plugins/i18n.rb      the languages, and how a story finds its translation
     _plugins/exif.rb      capture date and camera, read from the JPEG
+    _js/postcard.js       the postcard: one layout, drawn as SVG and as PDF
+    _js/pdf.js            a PDF writer, and enough TrueType to draw with
     _plugins/minify.rb    HTML minification
     _plugins/build.rb     what stays out of the built site
     _reference/           country and airport tables, English and Chinese
@@ -277,12 +315,16 @@ A panorama does not zoom at all: fitted, it is showing everything it has, and
 close up it is magnified already. Pinch and ctrl-scroll are still refused over
 it, so the gesture does not fall through and zoom the page.
 
-The popup's own buttons -- the postcard's and the panorama's -- share a rail of
-two slots, so either alone takes the first and the two together never land on
-each other. Where the slots are is decided once, in
+The popup's own buttons -- the postcard's, the panorama's and the one that
+saves a card -- share a rail of two slots, so that one alone takes the first
+and no two ever land on each other. Only two are ever on screen: the panorama's
+button is put away while the card is showing, which is the only time the card's
+own is there. Where the slots are is decided once, in
 `_sass/components/_postcard.scss`: under the closer on a full-size photograph,
 beside it on a phone, and in a row above the picture when the picture is a
-ribbon with no room inside it.
+ribbon with no room inside it. The card keeps clear of the rail rather than
+sitting under it -- the face reserves the lane as padding, and the card is
+fitted to what is left.
 
 ## The edges of the screen
 

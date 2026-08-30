@@ -17,6 +17,9 @@
     data-baseurl="{{ site.baseurl }}/"
     data-locale="{{ locale }}"
     data-postcards-url="{{ postcards_url | relative_url }}"
+    data-postcard-author="{{ site.author | escape }}"
+    data-postcard-home="{{ '/' | absolute_url }}"
+    data-postcard-font="{{ '/assets/fonts/' | relative_url }}"
     data-site-text="{{ t.js | jsonify | escape }}"
 >
 <head>

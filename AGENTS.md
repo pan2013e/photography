@@ -32,7 +32,8 @@ Breaking any of these breaks the site quietly, which is worse than loudly.
    `/cn` or `/cn-bj`. This was an explicit decision, not an oversight.
 4. **Nothing in `assets/` is written by hand** except the two geojson files.
    `main.min.css` and `site.min.js` are built; `atlas.json` and
-   `postcards.json` are generated during the Jekyll build.
+   `postcards.json` are generated during the Jekyll build. `assets/fonts`
+   holds faces as they were shipped, licences beside them.
 5. **Anything not served lives in a directory starting with an underscore.**
    That is the whole exclusion rule. Do not add an `exclude:` list to
    `_config.yml` -- setting the key would also discard Jekyll's own defaults.
@@ -43,7 +44,9 @@ Breaking any of these breaks the site quietly, which is worse than loudly.
 7. **The site loads exactly two files**: `assets/css/main.min.css` and
    `assets/js/site.min.js`. Adding a `<link>` or `<script>` to a layout is
    almost always the wrong fix -- add the source to `_sass` or `_js` instead,
-   and to the list in `_tools/bundle.js` if it is a new script.
+   and to the list in `_tools/bundle.js` if it is a new script. Fonts are the
+   exception the stylesheet already makes, and the postcard's `.ttf` is asked
+   for only when a reader asks for a PDF.
 8. **No English in a template, a script or a stylesheet.** Every word a reader
    sees comes from `_data/i18n/<locale>.yml`: templates read
    `site.data.i18n[locale]`, scripts read `window.SiteText`, and the one string
@@ -65,6 +68,8 @@ Breaking any of these breaks the site quietly, which is worse than loudly.
     _data/i18n/           interface text, one file per locale, same keys
     _data/postcards.yml   the only hand-written list in the repository
     _js/                  site scripts + vendor; bundled into site.min.js
+    _js/postcard.js       the postcard: one layout, drawn as SVG and as PDF
+    _js/pdf.js            a PDF writer, and enough TrueType to draw with
     _sass/                styles; built into main.min.css
     _tools/               images.js (sizes, ingest), bundle.js (scripts)
     assets/               only what is served
@@ -80,6 +85,20 @@ bundle exec jekyll build
 The pre-commit hook does both and refuses the commit if the build fails. It is
 installed by `npm install`. Do not commit around it with `--no-verify` unless
 the failure is understood.
+
+## The postcard is drawn once
+
+A card is laid out in millimetres at A6, as a list of shapes, by `layout` in
+`_js/postcard.js`. That list is then either put on screen as an SVG or written
+out as a PDF. Adding something to a card means adding a shape, and it appears
+in both; drawing it twice, once for each, is how the printed card and the one
+on screen start to disagree.
+
+The card has a shape of its own, so it no longer takes the photograph's. It is
+fitted into whatever box the lightbox gives it and turned a quarter turn where
+that box is upright -- both in CSS, from a container query on the card's own
+box rather than on the width of the window. The window does not know what shape
+the photograph was.
 
 ## Things that will bite you
 

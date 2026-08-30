@@ -29,6 +29,7 @@ const LIBRARIES = [
 ];
 
 const SOURCES = [
+  'pdf.js',
   'postcard.js',
   'zoom.js',
   'navigate.js',

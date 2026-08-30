@@ -1,27 +1,95 @@
-# Zine postcards.
+# Postcards.
 #
-# List a photograph here and it gets a flip button in the lightbox and a small
-# envelope mark on its thumbnail. The file name on its own is enough:
+# The only hand-written list in the repository. A photograph named here gets a
+# small envelope mark on its thumbnail and a flip button in the lightbox that
+# turns it over to its back -- a postcard back, laid out the way China Post
+# lays one out: six red boxes for the recipient's postcode across the top, the
+# stamp at the right of them, the message down the left of the divider and the
+# address down the right. The back can also be saved as a print-ready A6 PDF,
+# with the postcode, the address and the message as fields to type into.
+#
+# The file name on its own is enough:
 #
 #   - cn-sh-1731339471080.jpg
 #
-# The card fills itself in -- the date and camera come from the photograph's
-# EXIF, the location from where the photograph is filed (cn-sh is Shanghai,
-# pek is Beijing Capital), the number from the position in this list, and the
-# colour swatches are sampled from the photograph. Anything that cannot be
-# worked out is simply left off the card.
-#
-# Override any of it by writing a record instead of a bare file name:
+# Everything else is worked out from the photograph. Write a record instead of
+# a bare name only to say something the photograph cannot:
 #
 #   - photo: cn-sh-1731339471080.jpg
-#     title: Pudong Skyline      # defaults to the place
-#     kind: Postcard             # the italic line under the title
-#     location: The Bund         # set to "" to leave it off
-#     date: November 2024        # any text, or a date like 2024-11-11
-#     number: 17
-#     camera: Fujifilm X-T5
-#     illustration: cn-sh-1731339471080.png   # in images/postcards
-#     swatches: ['#4a90d9', '#3a4450', '#e8e8e6']
-#     note: One line printed under the swatches.
+#     note: The river turned to brass, and the towers stood in it.
+#
+#
+# ## The fields
+#
+# photo         The file name in images/fulls, extension included. Required;
+#               it is what the bare-string form sets. If you rename the
+#               photograph -- filing it by province, say -- rename it here too.
+#
+# title         The headline, printed large. Defaults to the closest named
+#               place the photograph is filed under: Shanghai for cn-sh-*,
+#               Beijing Capital for pek-*, China for a plain cn-*.
+#               Keep it to two or three words; it is set in one line and is
+#               shortened to fit rather than wrapped.
+#
+# kind          The small letterspaced label at the head of the card, above the
+#               title. Defaults to the word for "postcard" in the language the
+#               page is being read in (postcard.kind in _data/i18n/<locale>.yml)
+#               A series name goes here -- "Field Notes", "Night Work".
+#
+# location      The line under the title. Defaults to the place the title's
+#               place sits in: China under Shanghai, nothing under China.
+#               Set it to a more exact spot -- The Bund, Lujiazui -- when the
+#               photograph was taken somewhere worth naming. Set it to "" to
+#               leave the line off. It is dropped when it repeats the title.
+#
+# date          When the photograph was taken, printed small at the foot of the
+#               card beside the copyright. Defaults to its own EXIF capture
+#               date, written the way the language writes dates. Any text is
+#               allowed -- "November 2024", "A Tuesday in autumn" -- and a real
+#               date (2024-11-11) is formatted like the automatic one. Set it
+#               to "" to leave it off.
+#
+#               This is not the date on the card. That one belongs to whoever
+#               sends it: the line above the message is dated today, and is a
+#               field to write over in the exported PDF.
+#
+# note          The one thing worth writing by hand: a sentence printed on the
+#               message side, in italic, above the ruled lines. A line about
+#               what the photograph is, or a line the photograph brought to
+#               mind -- either reads well, plain description or poetry, as long
+#               as it is one thought and not a caption of facts already on the
+#               card. Roughly 60 to 160 characters; it wraps to at most three
+#               lines and anything past them is dropped. No line breaks: write
+#               one sentence, or two short ones.
+#
+#               Good:  The river turned to brass, and the towers stood in it.
+#               Good:  Forty minutes before the lights came on, when the city
+#                      is still deciding what colour to be.
+#               Poor:  Shanghai, November 2024, shot on an iPhone.  <- the card
+#                      already says all of this
+#
+# illustration  A drawing, printed as a vignette at the head of the message
+#               side. Found automatically: images/postcards/<photograph>.png --
+#               for cn-sh-1731339471080.jpg that is
+#               images/postcards/cn-sh-1731339471080.png -- and .svg, .webp and
+#               .jpg are looked for too. Name a different file to override it,
+#               or set it to "" for a card with no drawing.
+#
+#               Drawings are not resized by `npm run images`. Export them at
+#               about 1200 px on the long edge, transparent PNG or SVG. A
+#               drawing that is roughly 4:3 or wider sits best.
+#
+# swatches      Three colours printed as small dots under the title, sampled
+#               from the photograph in the browser. Name your own to override
+#               them -- ['#4a90d9', '#3a4450', '#e8e8e6'] -- or set them to []
+#               to leave them off.
+#
+#
+# ## What is deliberately not a field
+#
+# The camera, the exposure and a serial number. The lightbox already prints the
+# camera under the photograph, and a postcard that lists its equipment is a
+# specification sheet. Everything a card says should be something a reader
+# would want to read on the back of one.
 
 - cn-sh-1731339471080.jpg

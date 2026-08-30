@@ -32,6 +32,10 @@ module Atlas
   ROOT = File.expand_path('..', __dir__)
   REFERENCE = File.join(ROOT, '_reference')
   REGIONS_GEOJSON = File.join(ROOT, 'assets', 'china-regions.geo.json')
+  POSTCARD_ART = File.join(ROOT, 'images', 'postcards')
+  # A drawing is looked for under the photograph's own name, in the order
+  # a browser would rather have it.
+  ILLUSTRATION_EXTENSIONS = ['.svg', '.png', '.webp', '.jpg', '.jpeg'].freeze
 
   # Prefixes that are not a place. Their names are written here rather than in
   # a reference table because there is one of them.
@@ -476,17 +480,23 @@ module Jekyll
       payload
     end
 
+    # A postcard's fields, with everything that can be worked out filled in.
+    #
+    # The photograph is the source: the place it is filed under names the card,
+    # its EXIF dates it, and a drawing beside it in images/postcards is found
+    # by its own name. Anything that cannot be worked out is left out, so a
+    # card that says nothing but where and when is still a finished card.
     def postcards(site, locale)
       entries = site.data['postcards'] || []
       galleries = Atlas.galleries(site, locale).each_with_object({}) { |g, all| all[g['code']] = g }
       kind_default = (I18n.strings(site, locale)['postcard'] || {})['kind']
 
-      entries.each_with_index.each_with_object({}) do |(entry, index), cards|
+      entries.each_with_object({}) do |entry, cards|
         entry = { 'photo' => entry } if entry.is_a?(String)
         photo = entry['photo']
         next unless photo
 
-        card = { 'number' => entry['number'] || index + 1 }
+        card = {}
         card['kind'] = entry['kind'] || kind_default
 
         exif = Atlas::Exif.read(File.join(Atlas::ROOT, 'images', 'fulls', photo))
@@ -505,17 +515,36 @@ module Jekyll
                end
         card['date'] = date if date && !date.to_s.empty?
 
-        camera = entry['camera'] || exif['camera']
-        card['camera'] = camera if camera && !camera.empty?
+        # The year the photograph was taken, for the copyright line the card
+        # carries into its PDF.
+        taken = exif['date']
+        card['year'] = taken[0] if taken.is_a?(Array) && taken.length == 3
 
-        card['note'] = entry['note'] if entry['note']
+        card['note'] = entry['note'] if entry['note'] && !entry['note'].to_s.empty?
         card['swatches'] = entry['swatches'] if entry['swatches']
-        if entry['illustration']
-          card['illustration'] = "#{site.baseurl}/images/postcards/#{entry['illustration']}"
-        end
+
+        drawing = illustration_for(entry, photo)
+        card['illustration'] = "#{site.baseurl}/images/postcards/#{drawing}" if drawing
 
         cards[photo] = card
       end
+    end
+
+    # The drawing is found rather than named: images/postcards/<photograph>.png
+    # belongs to that photograph. `illustration:` overrides the name, and an
+    # empty one leaves the card without a drawing.
+    def illustration_for(entry, photo)
+      if entry.key?('illustration')
+        named = entry['illustration'].to_s
+        return named.empty? ? nil : named
+      end
+
+      found = Atlas::ILLUSTRATION_EXTENSIONS.map { |ext| "#{File.basename(photo, '.*')}#{ext}" }
+                                     .find { |name| File.file?(File.join(Atlas::POSTCARD_ART, name)) }
+      unless found
+        Jekyll.logger.debug 'Atlas:', "no drawing for postcard #{photo}"
+      end
+      found
     end
 
     # Where a photograph was taken, from where it is filed: the headline is the
